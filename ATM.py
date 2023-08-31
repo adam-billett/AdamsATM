@@ -35,6 +35,7 @@ class ATM:
 
         self.create_tables()
 
+        # SQL creating tables
     def create_tables(self):  # Creating SQL tables
         self.cursor.execute('''
                     CREATE TABLE IF NOT EXISTS users (
@@ -86,6 +87,7 @@ class ATM:
                 ''')
 
         self.connection.commit()
+
         # HIDING FRAME METHODS
 
     # To hide the creation frame
@@ -114,7 +116,7 @@ class ATM:
     def on_close(self):  # Closing the root from any window
         self.root.quit()
 
-    def login(self):
+    def login(self): # Method to login
         username = self.username.get()
         password = self.password.get()
 
@@ -125,14 +127,15 @@ class ATM:
             db_password = self.cursor.fetchone()
 
             if db_password and db_password[0] == password:
+                self.current_user = username
                 messagebox.showinfo("Login successful")
                 self.root.withdraw()
                 # Main menu display
-                self.main_menu()
+                self.main_menu(username)
             else:
                 messagebox.showerror("Invalid username or password")
 
-    def create(self):
+    def create(self): # Method to create a new user
         username = self.create_user_entry.get()
         password = self.create_password.get()
 
@@ -159,20 +162,26 @@ class ATM:
         self.login_frame = tk.Toplevel(self.root)
         self.login_frame.geometry("275x125")
         self.login_frame.protocol("WM_DELETE_WINDOW", self.on_close)
+
         # Username label for login frame
         self.username_lbl = tk.Label(self.login_frame, text="Username")
         self.username_lbl.grid(row=0, column=0, padx=5, pady=5)
+
         # Username entry
         self.username = tk.Entry(self.login_frame)
         self.username.grid(row=0, column=1, padx=5, pady=5)
+
         # password label for login frame
         self.password_lbl = tk.Label(self.login_frame, text="Password")
         self.password_lbl.grid(row=1, column=0, padx=5, pady=5)
+
         # password entry
         self.password = tk.Entry(self.login_frame, show="*")
         self.password.grid(row=1, column=1, padx=5, pady=5)
+
         # setting false so the password is show as ***
         self.show_password = False
+
         # inserting the eye icon to toggle the password on and off
         self.eye_icon = Image.open("eye.jpg")
         self.eye_icon = self.eye_icon.resize((20, 20))
@@ -180,16 +189,20 @@ class ATM:
         self.hide_eye_icon = Image.open("eye.jpg")
         self.hide_eye_icon = self.hide_eye_icon.resize((20, 20))
         self.hide_eye_icon = ImageTk.PhotoImage(self.hide_eye_icon)
+
         # eye button for show password
         self.eye_button = tk.Button(self.login_frame, image=self.eye_icon, command=self.toggle_password)
         self.eye_button.grid(row=1, column=2, padx=5, pady=5)
+
         # login button at the bottom to confirm login
         self.login_btn = tk.Button(self.login_frame, text="Login", command=self.login)
         self.login_btn.grid(row=2, column=1, padx=5, pady=5)
+
         # link to go to create user window
         self.create_win = tk.Label(self.login_frame, text="Create user", fg="blue", cursor="hand2")
         self.create_win.grid(row=3, column=1, padx=5, pady=5)
         self.create_win.bind("<Button-1>", lambda event: self.create_menu() and self.hide_login_ui())
+
         # Bind submit button to enter key
         self.password.bind("<Return>", lambda event: self.login())
 
@@ -199,36 +212,102 @@ class ATM:
         self.create_frame = tk.Toplevel(self.root)
         self.create_frame.geometry("275x125")
         self.create_frame.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.current_user = None
+
         # username create label
         self.create_user = tk.Label(self.create_frame, text="Username")
         self.create_user.grid(row=0, column=0, padx=3, pady=3)
+
         # create username entry
         self.create_user_entry = tk.Entry(self.create_frame)
         self.create_user_entry.grid(row=0, column=1, padx=3, pady=3)
+
         # create password label
         self.create_password_lbl = tk.Label(self.create_frame, text="Password")
         self.create_password_lbl.grid(row=1, column=0, padx=3, pady=3)
+
         # create password entry
         self.create_password = tk.Entry(self.create_frame, show="*")
         self.create_password.grid(row=1, column=1, padx=3, pady=3)
+
         # Create button to submit user creating
         self.create_sub = tk.Button(self.create_frame, text="create", command=self.create)
         self.create_sub.grid(row=2, column=1, padx=3, pady=3)
+
         # link to go back to the login frame
         self.back_login = tk.Label(self.create_frame, text="Back to Login", fg="blue", cursor="hand2")
         self.back_login.grid(row=3, column=1, padx=3, pady=3)
         self.back_login.bind("<Button-1>", lambda event: self.hide_create_ui() and self.login_menu())
+
         # bind enter key to submit button
         self.create_password.bind("<Return>", lambda event: self.create())
 
-    def main_menu(self):  # screen to show when successfully logged in
+    def main_menu(self, current_user):  # screen to show when successfully logged in
         """1. Check balance
            2. Deposit
            3. withdraw
            4. transfer
-           5. exit
+           5. add card
+           6. check locations
+           0. exit
         """
-        self.bal_
+        self.login_frame.withdraw()
+        self.main_frame = tk.Toplevel(self.root)
+        self.main_frame.geometry("500x500")
+        self.main_frame.protocol("WM_DELETE_WINDOW", self.on_close)
+
+        # Display for current user
+        self.current_user = tk.Label(self.main_frame, text=current_user)
+        self.current_user.grid(row=0, column=1, padx=10, pady=10)
+
+        # check balance button
+        self.bal_btn = tk.Button(self.main_frame, text="Balance")
+        self.bal_btn.grid(row=0, column=0, padx=3, pady=3)
+
+        # Deposit button
+        self.depo_btn = tk.Button(self.main_frame, text="Deposit")
+        self.depo_btn.grid(row=1, column=0, padx=3, pady=3)
+
+        # Withdraw button
+        self.with_btn = tk.Button(self.main_frame, text="Withdraw")
+        self.with_btn.grid(row=2, column=0, padx=3, pady=3)
+
+        # Transfer Button
+        self.transfer_btn = tk.Button(self.main_frame, text="Transfer")
+        self.transfer_btn.grid(row=3, column=0, padx=3, pady=3)
+
+        # Add a Card
+        self.card_btn = tk.Button(self.main_frame, text="Add Card")
+        self.card_btn.grid(row=4, column=0, padx=3, pady=3)
+
+        # Check locations button
+        self.locations_btn = tk.Button(self.main_frame, text="Locations")
+        self.locations_btn.grid(row=5, column=0, padx=3, pady=3)
+
+        # Exit/Logout button
+        self.logout = tk.Button(self.main_frame, text="Logout")
+        self.logout.grid(row=6, column=0, padx=3, pady=3)
+
+        # MAIN MENU METHODS
+    def check_bal(self): # Method to check current users balance
+        pass
+
+    def deposit(self): # Method to deposit money into users account
+        pass
+
+    def withdraw(self): # Method to withdraw money from users account
+        pass
+
+    def transfer(self): # Method to transfer funds from one account to another
+        pass
+
+    def add_card(self): # Method to add a card to the users account
+        pass
+
+    def locations(self): # Method to display ATM locations
+        pass
+
+    def logout(self): # Method to logout the current user
         pass
 
 
