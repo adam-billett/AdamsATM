@@ -128,6 +128,7 @@ class ATM:
                 messagebox.showinfo("Login successful")
                 self.root.withdraw()
                 # Main menu display
+                self.main_menu()
             else:
                 messagebox.showerror("Invalid username or password")
 
@@ -147,7 +148,7 @@ class ATM:
         messagebox.showinfo("Account created")
 
         self.create_frame.withdraw()
-        self.root.deiconify()
+        self.login_menu()
 
         # MENU'S
 
@@ -213,7 +214,7 @@ class ATM:
         # Create button to submit user creating
         self.create_sub = tk.Button(self.create_frame, text="create", command=self.create)
         self.create_sub.grid(row=2, column=1, padx=3, pady=3)
-        # link to go back to login
+        # link to go back to the login frame
         self.back_login = tk.Label(self.create_frame, text="Back to Login", fg="blue", cursor="hand2")
         self.back_login.grid(row=3, column=1, padx=3, pady=3)
         self.back_login.bind("<Button-1>", lambda event: self.hide_create_ui() and self.login_menu())
@@ -221,6 +222,13 @@ class ATM:
         self.create_password.bind("<Return>", lambda event: self.create())
 
     def main_menu(self):  # screen to show when successfully logged in
+        """1. Check balance
+           2. Deposit
+           3. withdraw
+           4. transfer
+           5. exit
+        """
+        self.bal_
         pass
 
 
