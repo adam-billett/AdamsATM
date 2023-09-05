@@ -138,6 +138,7 @@ class ATM:
     def create(self): # Method to create a new user
         username = self.create_user_entry.get()
         password = self.create_password.get()
+        full_name = self.full_name_entry.get()
 
         self.cursor.execute("SELECT username FROM users WHERE username = %s", (username,))
         existing_user = self.cursor.fetchone()
@@ -146,7 +147,7 @@ class ATM:
             messagebox.showerror("Username already exists")
             return
 
-        self.cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
+        self.cursor.execute("INSERT INTO users (username, password, full_name) VALUES (%s, %s, %s)", (username, password, full_name))
         self.connection.commit()
         messagebox.showinfo("Account created")
 
@@ -160,7 +161,7 @@ class ATM:
 
         # Creating the login frame
         self.login_frame = tk.Toplevel(self.root)
-        self.login_frame.geometry("275x125")
+        self.login_frame.geometry("300x150")
         self.login_frame.protocol("WM_DELETE_WINDOW", self.on_close)
 
         # Username label for login frame
@@ -210,33 +211,41 @@ class ATM:
         self.login_frame.withdraw()
         self.root.withdraw()
         self.create_frame = tk.Toplevel(self.root)
-        self.create_frame.geometry("275x125")
+        self.create_frame.geometry("300x150")
         self.create_frame.protocol("WM_DELETE_WINDOW", self.on_close)
         self.current_user = None
 
+        # Full name label
+        self.full_name = tk.Label(self.create_frame, text="Full name")
+        self.full_name.grid(row=0, column=0, padx=3, pady=3)
+
+        # Full name entry
+        self.full_name_entry = tk.Entry(self.create_frame)
+        self.full_name_entry.grid(row=0, column=1, padx=3, pady=3)
+
         # username create label
         self.create_user = tk.Label(self.create_frame, text="Username")
-        self.create_user.grid(row=0, column=0, padx=3, pady=3)
+        self.create_user.grid(row=1, column=0, padx=3, pady=3)
 
         # create username entry
         self.create_user_entry = tk.Entry(self.create_frame)
-        self.create_user_entry.grid(row=0, column=1, padx=3, pady=3)
+        self.create_user_entry.grid(row=1, column=1, padx=3, pady=3)
 
         # create password label
         self.create_password_lbl = tk.Label(self.create_frame, text="Password")
-        self.create_password_lbl.grid(row=1, column=0, padx=3, pady=3)
+        self.create_password_lbl.grid(row=2, column=0, padx=3, pady=3)
 
         # create password entry
         self.create_password = tk.Entry(self.create_frame, show="*")
-        self.create_password.grid(row=1, column=1, padx=3, pady=3)
+        self.create_password.grid(row=2, column=1, padx=3, pady=3)
 
         # Create button to submit user creating
         self.create_sub = tk.Button(self.create_frame, text="create", command=self.create)
-        self.create_sub.grid(row=2, column=1, padx=3, pady=3)
+        self.create_sub.grid(row=3, column=1, padx=3, pady=3)
 
         # link to go back to the login frame
         self.back_login = tk.Label(self.create_frame, text="Back to Login", fg="blue", cursor="hand2")
-        self.back_login.grid(row=3, column=1, padx=3, pady=3)
+        self.back_login.grid(row=4, column=1, padx=3, pady=3)
         self.back_login.bind("<Button-1>", lambda event: self.hide_create_ui() and self.login_menu())
 
         # bind enter key to submit button
@@ -307,9 +316,21 @@ class ATM:
     def locations(self): # Method to display ATM locations
         pass
 
-    def logout(self): # Method to logout the current user
+    def logout(self): # Method to log out the current user
         pass
 
+        # CREATING ACCOUNT METHOD
+    def account_create(self):
+        # Account ID = serial, balance starts at 0
+        self.cursor.execute("SELECT user_id FROM users WHERE username = %s", (self.username,))
+        user_id = self.cursor.fetchone()[0]
+
+        '''account_data = {
+            'user_id': user_id,
+            'account_number': account_num,
+            'balance': 0.0,
+            'account_type': account_type
+        }'''
 
 def main():
     root = tk.Tk()
