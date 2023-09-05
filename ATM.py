@@ -36,6 +36,7 @@ class ATM:
         self.create_tables()
 
         # SQL creating tables
+
     def create_tables(self):  # Creating SQL tables
         self.cursor.execute('''
                     CREATE TABLE IF NOT EXISTS users (
@@ -51,7 +52,7 @@ class ATM:
                     CREATE TABLE IF NOT EXISTS accounts (
                         account_id SERIAL PRIMARY KEY,
                         user_id INT REFERENCES users(user_id),
-                        account_number VARCHAR,
+                        account_number SERIAL,
                         balance DECIMAL,
                         account_type VARCHAR
                     )
@@ -116,26 +117,32 @@ class ATM:
     def on_close(self):  # Closing the root from any window
         self.root.quit()
 
-    def login(self): # Method to login
+    def login(self):  # Method to login
         username = self.username.get()
         password = self.password.get()
 
         if not username or not password:
             messagebox.showerror("Missing Info, try again")
-        else:
+            return
+
+        try:
             self.cursor.execute("SELECT password FROM users WHERE username = %s", (username,))
             db_password = self.cursor.fetchone()
 
             if db_password and db_password[0] == password:
                 self.current_user = username
                 messagebox.showinfo("Login successful")
+                self.password.delete(0, tk.END)
                 self.root.withdraw()
                 # Main menu display
                 self.main_menu(username)
             else:
                 messagebox.showerror("Invalid username or password")
 
-    def create(self): # Method to create a new user
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def create(self):  # Method to create a new user
         username = self.create_user_entry.get()
         password = self.create_password.get()
         full_name = self.full_name_entry.get()
@@ -147,7 +154,8 @@ class ATM:
             messagebox.showerror("Username already exists")
             return
 
-        self.cursor.execute("INSERT INTO users (username, password, full_name) VALUES (%s, %s, %s)", (username, password, full_name))
+        self.cursor.execute("INSERT INTO users (username, password, full_name) VALUES (%s, %s, %s)",
+                            (username, password, full_name))
         self.connection.commit()
         messagebox.showinfo("Account created")
 
@@ -260,7 +268,11 @@ class ATM:
            6. check locations
            0. exit
         """
+        if hasattr(self, "main_frame"):
+            self.main_frame.destroy()
+
         self.login_frame.withdraw()
+
         self.main_frame = tk.Toplevel(self.root)
         self.main_frame.geometry("500x500")
         self.main_frame.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -270,67 +282,117 @@ class ATM:
         self.current_user.grid(row=0, column=1, padx=10, pady=10)
 
         # check balance button
-        self.bal_btn = tk.Button(self.main_frame, text="Balance")
+        self.bal_btn = tk.Button(self.main_frame, text="Balance", command=self.check_bal)
         self.bal_btn.grid(row=0, column=0, padx=3, pady=3)
 
         # Deposit button
-        self.depo_btn = tk.Button(self.main_frame, text="Deposit")
+        self.depo_btn = tk.Button(self.main_frame, text="Deposit", command=self.deposit)
         self.depo_btn.grid(row=1, column=0, padx=3, pady=3)
 
         # Withdraw button
-        self.with_btn = tk.Button(self.main_frame, text="Withdraw")
+        self.with_btn = tk.Button(self.main_frame, text="Withdraw", command=self.withdraw)
         self.with_btn.grid(row=2, column=0, padx=3, pady=3)
 
         # Transfer Button
-        self.transfer_btn = tk.Button(self.main_frame, text="Transfer")
+        self.transfer_btn = tk.Button(self.main_frame, text="Transfer", command=self.transfer)
         self.transfer_btn.grid(row=3, column=0, padx=3, pady=3)
 
         # Add a Card
-        self.card_btn = tk.Button(self.main_frame, text="Add Card")
+        self.card_btn = tk.Button(self.main_frame, text="Add Card", command=self.add_card)
         self.card_btn.grid(row=4, column=0, padx=3, pady=3)
 
         # Check locations button
-        self.locations_btn = tk.Button(self.main_frame, text="Locations")
+        self.locations_btn = tk.Button(self.main_frame, text="Locations", command=self.locations)
         self.locations_btn.grid(row=5, column=0, padx=3, pady=3)
 
+        # Open an account button
+        self.account_btn = tk.Button(self.main_frame, text="Create Account", command=self.account_create)
+        self.account_btn.grid(row=6, column=0, padx=3, pady=3)
+
         # Exit/Logout button
-        self.logout = tk.Button(self.main_frame, text="Logout")
-        self.logout.grid(row=6, column=0, padx=3, pady=3)
+        self.logout = tk.Button(self.main_frame, text="Logout", command=self.logout)
+        self.logout.grid(row=7, column=0, padx=3, pady=3)
 
         # MAIN MENU METHODS
-    def check_bal(self): # Method to check current users balance
+
+    # TODO: ALL METHODS ARE NOT FULLY FUNCTIONAL
+    def check_bal(self):  # Method to check current users balance
+        try:
+            # Get users balance from database
+            self.cursor.execute("SELECT balance FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s)",(self.current_user))
+            user_balance = self.cursor = self.cursor.fetchone()
+
+            if user_balance:
+                # Display the users balance
+                messagebox.showinfo("Balance", f"Your current balance: ${user_balance[0]:.2f}")
+            else:
+                messagebox.showerror("Error", "Unable to retrieve")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def deposit(self):  # Method to deposit money into users account
+        # Withdrawing the main frame so it is not showing
+        self.main_frame.withdraw()
+        # Creating new frame for deposit
+        self.depo_frame = tk.Toplevel(self.root)
+        self.depo_frame.geometry("500x500")
+        self.depo_frame.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.amount_lbl = tk.Label(self.depo_frame, text="Amount")
+        self.amount_lbl.grid(row=4, column=0, padx=3, pady=3)
+
+        self.amount_entry = tk.Entry(self.depo_frame)
+        self.amount_entry.grid(row=4, column=1, padx=3, pady=3)
+
+    def withdraw(self):  # Method to withdraw money from users account
         pass
 
-    def deposit(self): # Method to deposit money into users account
+    def transfer(self):  # Method to transfer funds from one account to another
         pass
 
-    def withdraw(self): # Method to withdraw money from users account
+    def add_card(self):  # Method to add a card to the users account
         pass
 
-    def transfer(self): # Method to transfer funds from one account to another
+    def locations(self):  # Method to display ATM locations
+
         pass
 
-    def add_card(self): # Method to add a card to the users account
-        pass
+    def account_create(self): # Method to open an account within the logged in user
+        # withdrawing the main frame
+        self.main_frame.withdraw()
+        # creating a new frame for the account creation
+        self.account_frame = tk.Toplevel(self.root)
+        self.account_frame.geometry("300x300")
+        self.account_frame.protocol("WM_DELETE_WINDOW", self.on_close)
 
-    def locations(self): # Method to display ATM locations
-        pass
+        # Label for type of account
+        self.type_lbl = tk.Label(self.account_frame, text="Type")
+        self.type_lbl.grid(row=0, column=0, padx=3, pady=3)
 
-    def logout(self): # Method to log out the current user
-        pass
+        # Entry for the type
+        self.type_entry = tk.Entry(self.account_frame)
+        self.type_entry.grid(row=0, column=1, padx=3, pady=3)
 
-        # CREATING ACCOUNT METHOD
-    def account_create(self):
         # Account ID = serial, balance starts at 0
+        # Fetching the user id of the current logged-in user
         self.cursor.execute("SELECT user_id FROM users WHERE username = %s", (self.username,))
-        user_id = self.cursor.fetchone()[0]
+        curr_id = self.cursor.fetchone() # id of the current user
 
-        '''account_data = {
-            'user_id': user_id,
-            'account_number': account_num,
-            'balance': 0.0,
-            'account_type': account_type
-        }'''
+        # TODO: NEED TO WORK OUT HOW TO EXTRACT CURRENT DATA AND DATA THE USER MUST ENTER
+        # Inserting their user id, the account number, their balance, and the account type into the accounts table
+        self.cursor.execute(
+            ("INSERT INTO accounts (curr_id, account_number, balance, account_type) VALUES (%s, %s, %s, %s)"))
+
+    def logout(self):  # Method to log out the current user
+        # todo: BUG FIX CAN ONLY LOGOUT ONCE THEN THE BUTTON STOPS WORKING
+        print("Logout")
+        if self.current_user:
+            self.current_user = None
+            if self.main_frame:
+                self.main_frame.destroy()
+                self.login_frame.deiconify()
+        else:
+            messagebox.showinfo("Logout fail")
+
 
 def main():
     root = tk.Tk()
