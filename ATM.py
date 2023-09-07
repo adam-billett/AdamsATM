@@ -337,7 +337,7 @@ class ATM:
             messagebox.showerror("Error", str(e))
 
     def deposit(self):  # Method to deposit money into users account
-        # Withdrawing the main frame so it is not showing
+        # Deposit to display on main frame
         self.main_frame.withdraw()
         # Creating a new frame for deposit
         self.depo_frame = tk.Toplevel(self.root)
@@ -370,16 +370,28 @@ class ATM:
         self.account_frame.geometry("300x300")
         self.account_frame.protocol("WM_DELETE_WINDOW", self.on_close)
 
-        # Label for type of account
-        self.type_lbl = tk.Label(self.account_frame, text="Type")
-        self.type_lbl.grid(row=0, column=0, padx=3, pady=3)
+        selected_option = tk.StringVar(self.account_frame)
+        selected_option.set("Select an option")
 
-        # Entry for the type
-        self.type_entry = tk.Entry(self.account_frame)
-        self.type_entry.grid(row=0, column=1, padx=3, pady=3)
+        options = ["Checking", "Savings"]
+
+        option_menu = tk.OptionMenu(self.account_frame, selected_option, *options)
+        option_menu.grid(row=0, column=0, padx=3, pady=3)
+
+        label = tk.Label(self.account_frame, textvariable=selected_option)
+        label.grid(row=1, column=0, padx=3, pady=3)
+
+        # TODO: issue with menu labels popping up as its parameters
+        option_menu.bind("<Configure>", lambda event: self.on_option(event, selected_option.get()))
+
+        self.type_entry = selected_option
 
         self.submit_btn = tk.Button(self.account_frame, text="Submit", command=self.create_account)
         self.submit_btn.grid(row=2, column=2, padx=3, pady=3)
+        print(f"account type is {selected_option}")
+
+    def on_option(self, event, selected_option): # Drop down
+        selected_option.set(event)
 
     def create_account(self):
         print("account being created")
