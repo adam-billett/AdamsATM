@@ -8,6 +8,7 @@ from tabulate import tabulate
 import psycopg2
 import sys
 import ctypes
+import random
 
 from PIL import Image, ImageTk
 
@@ -117,6 +118,9 @@ class ATM:
     def on_close(self):  # Closing the root from any window
         self.root.quit()
 
+    def generate_rand_num(self): # Generate a random 8 digit number
+        return str(random.randint(10000000, 99999999))
+
     def login(self):  # Method to login
         username = self.username.get()
         password = self.password.get()
@@ -142,7 +146,7 @@ class ATM:
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
-    def create(self):  # Method to create a new user
+    def create(self):  # Method to create a new user TODO: create method
         username = self.create_user_entry.get()
         password = self.create_password.get()
         full_name = self.full_name_entry.get()
@@ -221,7 +225,7 @@ class ATM:
         self.create_frame = tk.Toplevel(self.root)
         self.create_frame.geometry("300x150")
         self.create_frame.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.current_user = None
+
 
         # Full name label
         self.full_name = tk.Label(self.create_frame, text="Full name")
@@ -256,7 +260,7 @@ class ATM:
         self.back_login.grid(row=4, column=1, padx=3, pady=3)
         self.back_login.bind("<Button-1>", lambda event: self.hide_create_ui() and self.login_menu())
 
-        # bind enter key to submit button
+        # binds the enter key to submit button
         self.create_password.bind("<Return>", lambda event: self.create())
 
     def main_menu(self, current_user):  # screen to show when successfully logged in
@@ -278,8 +282,8 @@ class ATM:
         self.main_frame.protocol("WM_DELETE_WINDOW", self.on_close)
 
         # Display for current user
-        self.current_user = tk.Label(self.main_frame, text=current_user)
-        self.current_user.grid(row=0, column=1, padx=10, pady=10)
+        self.current_user_label = tk.Label(self.main_frame, text=current_user)
+        self.current_user_label.grid(row=0, column=1, padx=10, pady=10)
 
         # check balance button
         self.bal_btn = tk.Button(self.main_frame, text="Balance", command=self.check_bal)
@@ -301,12 +305,12 @@ class ATM:
         self.card_btn = tk.Button(self.main_frame, text="Add Card", command=self.add_card)
         self.card_btn.grid(row=4, column=0, padx=3, pady=3)
 
-        # Check locations button
+        # Check the location's button
         self.locations_btn = tk.Button(self.main_frame, text="Locations", command=self.locations)
         self.locations_btn.grid(row=5, column=0, padx=3, pady=3)
 
         # Open an account button
-        self.account_btn = tk.Button(self.main_frame, text="Create Account", command=self.account_create)
+        self.account_btn = tk.Button(self.main_frame, text="Create Account", command=self.account_create_menu)
         self.account_btn.grid(row=6, column=0, padx=3, pady=3)
 
         # Exit/Logout button
@@ -319,11 +323,13 @@ class ATM:
     def check_bal(self):  # Method to check current users balance
         try:
             # Get users balance from database
-            self.cursor.execute("SELECT balance FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s)",(self.current_user))
+            self.cursor.execute(
+                "SELECT balance FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s)",
+                (str(self.current_user),))
             user_balance = self.cursor = self.cursor.fetchone()
 
             if user_balance:
-                # Display the users balance
+                # Display the-users balance
                 messagebox.showinfo("Balance", f"Your current balance: ${user_balance[0]:.2f}")
             else:
                 messagebox.showerror("Error", "Unable to retrieve")
@@ -333,7 +339,7 @@ class ATM:
     def deposit(self):  # Method to deposit money into users account
         # Withdrawing the main frame so it is not showing
         self.main_frame.withdraw()
-        # Creating new frame for deposit
+        # Creating a new frame for deposit
         self.depo_frame = tk.Toplevel(self.root)
         self.depo_frame.geometry("500x500")
         self.depo_frame.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -356,7 +362,7 @@ class ATM:
 
         pass
 
-    def account_create(self): # Method to open an account within the logged in user
+    def account_create_menu(self):  # Method to open an account within the logged-in user
         # withdrawing the main frame
         self.main_frame.withdraw()
         # creating a new frame for the account creation
@@ -372,15 +378,33 @@ class ATM:
         self.type_entry = tk.Entry(self.account_frame)
         self.type_entry.grid(row=0, column=1, padx=3, pady=3)
 
-        # Account ID = serial, balance starts at 0
-        # Fetching the user id of the current logged-in user
-        self.cursor.execute("SELECT user_id FROM users WHERE username = %s", (self.username,))
-        curr_id = self.cursor.fetchone() # id of the current user
+        self.submit_btn = tk.Button(self.account_frame, text="Submit", command=self.create_account)
+        self.submit_btn.grid(row=2, column=2, padx=3, pady=3)
 
-        # TODO: NEED TO WORK OUT HOW TO EXTRACT CURRENT DATA AND DATA THE USER MUST ENTER
-        # Inserting their user id, the account number, their balance, and the account type into the accounts table
-        self.cursor.execute(
-            ("INSERT INTO accounts (curr_id, account_number, balance, account_type) VALUES (%s, %s, %s, %s)"))
+    def create_account(self):
+        print("account being created")
+        try:
+        # Fetching the user id and balance of the current logged in user
+            print(f"Username: {self.current_user}")
+            self.cursor.execute("SELECT user_id FROM users WHERE username = %s", (str(self.current_user),))
+            curr_id = self.cursor.fetchone() # id of the current user
+            print(f"Current user (curr_id): {curr_id}")
+
+            if curr_id:
+                # Generate a random 8-digit account number
+                print("before acc num")
+                account_number = self.generate_rand_num()
+                print("after acc num")
+                # Inserting their user id, the acc number, their balance, and type of account
+                self.cursor.execute("INSERT INTO accounts (user_id, account_number, balance, account_type) VALUES (%s, %s, %s, %s)", (curr_id[0], account_number, 0.0, self.type_entry.get()))
+                self.connection.commit()
+
+                messagebox.showinfo("Account Created")
+            else:
+                messagebox.showerror("Error", "some sort of error")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
 
     def logout(self):  # Method to log out the current user
         # todo: BUG FIX CAN ONLY LOGOUT ONCE THEN THE BUTTON STOPS WORKING
@@ -388,7 +412,7 @@ class ATM:
         if self.current_user:
             self.current_user = None
             if self.main_frame:
-                self.main_frame.destroy()
+                self.main_frame.withdraw()
                 self.login_frame.deiconify()
         else:
             messagebox.showinfo("Logout fail")
