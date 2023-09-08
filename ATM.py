@@ -9,6 +9,7 @@ import psycopg2
 import sys
 import ctypes
 import random
+from datetime import date, timedelta
 
 from PIL import Image, ImageTk
 
@@ -118,8 +119,29 @@ class ATM:
     def on_close(self):  # Closing the root from any window
         self.root.quit()
 
-    def generate_rand_num(self): # Generate a random 8 digit number
+        # RANDOM NUMBER GENERATORS
+    def generate_rand_num(self): # Generate a random 8 digit number for the account number
         return str(random.randint(10000000, 99999999))
+
+    def generate_card_num(self): # Generate a random card number for the user
+        return str(random.randint(1000000000000000, 9999999999999999))
+
+    def generate_exp_date(self):
+        today = date.today()
+
+        max_years = 10
+
+        end_date = today + timedelta(days=(365 * max_years))
+
+        random_months = random.randint(0,11)
+        random_years = random.randint(0, max_years)
+
+        expiration_date = today + timedelta(days=(random_years * 365 + random_months * 30))
+
+        return expiration_date
+
+    def generate_ccv(self):
+        return str(random.randint(100, 999))
 
     def login(self):  # Method to login
         username = self.username.get()
@@ -302,7 +324,7 @@ class ATM:
         self.transfer_btn.grid(row=3, column=0, padx=3, pady=3)
 
         # Add a Card
-        self.card_btn = tk.Button(self.main_frame, text="Add Card", command=self.add_card)
+        self.card_btn = tk.Button(self.main_frame, text="Add Card", command=self.add_card_menu)
         self.card_btn.grid(row=4, column=0, padx=3, pady=3)
 
         # Check the location's button
@@ -355,11 +377,74 @@ class ATM:
     def transfer(self):  # Method to transfer funds from one account to another
         pass
 
-    def add_card(self):  # Method to add a card to the users account
-        pass
+    def add_card_menu(self):  # Method to add a card to the users account
+        # Withdrawing the main frame
+        self.main_frame.withdraw()
+        # Creating a new frame
+        self.card_frame = tk.Toplevel(self.root)
+        self.card_frame.geometry("300x300")
+        self.card_frame.protocol("WM_DELETE_WINDOW", self.on_close)
+
+        # Option to get a card by the bank, or to manually enter a card they already have.
+        # Manually add an existing card
+        #  Card number Label
+        self.card_num_lbl = tk.Label(self.card_frame, text="Card Number")
+        self.card_num_lbl.grid(row=0, column=0, padx=3, pady=3)
+        # Card number entry
+        self.card_num_entry = tk.Entry(self.card_frame)
+        self.card_num_entry.grid(row=0, column=1, padx=3, pady=3)
+        # Expiration date label
+        self.exp_date_lbl = tk.Label(self.card_frame, text="Expiration Date")
+        self.exp_date_lbl.grid(row=1, column=0, padx=3, pady=3)
+        # Expiration date entry
+        self.exp_date_entry = tk.Entry(self.card_frame)
+        self.exp_date_entry.grid(row=1, column=1, padx=3, pady=3)
+        # ccv label
+        self.ccv_lbl = tk.Label(self.card_frame, text="CCV")
+        self.ccv_lbl.grid(row=2, column=0, padx=3, pady=3)
+        # ccv entry
+        self.ccv_entry = tk.Entry(self.card_frame)
+        self.ccv_entry.grid(row=2, column=1, padx=3, pady=3)
+        # Submit button to enter the info
+        self.submit_card_btn = tk.Button(self.card_frame, text="Submit", command=self.add_card)
+        self.submit_card_btn.grid(row=3, column=1, padx=3, pady=3)
+        # Generate a bank card
+        self.generate_card_btn = tk.Button(self.card_frame, text="Generate", command=self.generate_card)
+        self.generate_card_btn.grid(row=4, column=1, padx=3, pady=3)
+
+    def add_card(self):
+        try:
+            # getting the id of the current user so we can use it to add the card to their account
+            self.cursor.execute("SELECT user_id FROM users WHERE username = %s", (str(self.current_user),))
+            curr_id = self.cursor.fetchone() # id of the current user
+
+            if curr_id:
+                self.cursor.execute("INSERT INTO card (user_id, card_number, expiration_date, cvv) VALUES (%s, %s, %s, %s)", (curr_id[0], self.card_num_entry.get(), self.exp_date_entry.get(), self.ccv_entry.get()))
+                self.connection.commit()
+
+                messagebox.showinfo("Card Added")
+            else:
+                messagebox.showerror("Error", "idk")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def generate_card(self):
+        try:
+            # Getting the current users id
+            self.cursor.execute("SELECT user_id FROM users WHERE username = %s", (str(self.current_user)))
+            curr_id = self.cursor.fetchone()
+
+            if curr_id:
+                self.cursor.execute("INSERT INTO CARD (user_id, card_number, expiration_date, cvv) VALUES (%s, %s, %s, %s)", (curr_id[0], self.generate_card_num(), self.generate_exp_date(), self.generate_ccv()))
+                self.connection.commit()
+
+                messagebox.showinfo("Card is on its way")
+            else:
+                messagebox.showerror("Error", "idk")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
 
     def locations(self):  # Method to display ATM locations
-
         pass
 
     def account_create_menu(self):  # Method to open an account within the logged-in user
@@ -382,31 +467,29 @@ class ATM:
         label.grid(row=1, column=0, padx=3, pady=3)
 
         # TODO: issue with menu labels popping up as its parameters
-        option_menu.bind("<Configure>", lambda event: self.on_option(event, selected_option.get()))
+        option_menu.bind("<ButtonRelease-1>", lambda event: self.on_option(event, selected_option))
 
         self.type_entry = selected_option
 
         self.submit_btn = tk.Button(self.account_frame, text="Submit", command=self.create_account)
         self.submit_btn.grid(row=2, column=2, padx=3, pady=3)
-        print(f"account type is {selected_option}")
+
+
+
 
     def on_option(self, event, selected_option): # Drop down
-        selected_option.set(event)
+        selected_option.set(selected_option.get())
+
 
     def create_account(self):
-        print("account being created")
         try:
         # Fetching the user id and balance of the current logged in user
-            print(f"Username: {self.current_user}")
             self.cursor.execute("SELECT user_id FROM users WHERE username = %s", (str(self.current_user),))
             curr_id = self.cursor.fetchone() # id of the current user
-            print(f"Current user (curr_id): {curr_id}")
 
             if curr_id:
                 # Generate a random 8-digit account number
-                print("before acc num")
                 account_number = self.generate_rand_num()
-                print("after acc num")
                 # Inserting their user id, the acc number, their balance, and type of account
                 self.cursor.execute("INSERT INTO accounts (user_id, account_number, balance, account_type) VALUES (%s, %s, %s, %s)", (curr_id[0], account_number, 0.0, self.type_entry.get()))
                 self.connection.commit()
@@ -420,7 +503,6 @@ class ATM:
 
     def logout(self):  # Method to log out the current user
         # todo: BUG FIX CAN ONLY LOGOUT ONCE THEN THE BUTTON STOPS WORKING
-        print("Logout")
         if self.current_user:
             self.current_user = None
             if self.main_frame:
