@@ -16,6 +16,7 @@ from PIL import Image, ImageTk
 
 class ATM:
     def __init__(self, root):
+        self.selected_option = None
         self.root = root
         self.root.title("Adams ATM")
 
@@ -90,6 +91,10 @@ class ATM:
                 ''')
 
         self.connection.commit()
+
+        # SQL STATEMENTS
+    def get_curr_user(self):
+        self.cursor.execute("SELECT user_id FROM users WHERE username = %s", (str(self.current_user),))
 
         # HIDING FRAME METHODS
 
@@ -312,15 +317,15 @@ class ATM:
         self.bal_btn.grid(row=0, column=0, padx=3, pady=3)
 
         # Deposit button
-        self.depo_btn = tk.Button(self.main_frame, text="Deposit", command=self.deposit)
+        self.depo_btn = tk.Button(self.main_frame, text="Deposit", command=self.deposit_menu)
         self.depo_btn.grid(row=1, column=0, padx=3, pady=3)
 
         # Withdraw button
-        self.with_btn = tk.Button(self.main_frame, text="Withdraw", command=self.withdraw)
+        self.with_btn = tk.Button(self.main_frame, text="Withdraw", command=self.withdraw_money_menu)
         self.with_btn.grid(row=2, column=0, padx=3, pady=3)
 
         # Transfer Button
-        self.transfer_btn = tk.Button(self.main_frame, text="Transfer", command=self.transfer)
+        self.transfer_btn = tk.Button(self.main_frame, text="Transfer", command=self.transfer_menu)
         self.transfer_btn.grid(row=3, column=0, padx=3, pady=3)
 
         # Add a Card
@@ -328,7 +333,7 @@ class ATM:
         self.card_btn.grid(row=4, column=0, padx=3, pady=3)
 
         # Check the location's button
-        self.locations_btn = tk.Button(self.main_frame, text="Locations", command=self.locations)
+        self.locations_btn = tk.Button(self.main_frame, text="Locations", command=self.locations_menu)
         self.locations_btn.grid(row=5, column=0, padx=3, pady=3)
 
         # Open an account button
@@ -358,7 +363,7 @@ class ATM:
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
-    def deposit(self):  # Method to deposit money into users account
+    def deposit_menu(self):  # Method to deposit money into users account
         # Deposit to display on main frame
         self.main_frame.withdraw()
         # Creating a new frame for deposit
@@ -367,14 +372,49 @@ class ATM:
         self.depo_frame.protocol("WM_DELETE_WINDOW", self.on_close)
         self.amount_lbl = tk.Label(self.depo_frame, text="Amount")
         self.amount_lbl.grid(row=4, column=0, padx=3, pady=3)
-
+        # Amount entry box
         self.amount_entry = tk.Entry(self.depo_frame)
         self.amount_entry.grid(row=4, column=1, padx=3, pady=3)
+        # Get the current users id
+        self.get_curr_user()
+        # Get accounts from the current user
+        self.cursor.execute("SELECT account_type FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s)", (str(self.current_user),))
+        user_accounts = self.cursor.fetchall()
+        account_types = [account[0] for account in user_accounts]
+        # drop down to select account to deposit into
+        self.selected_option = tk.StringVar(self.depo_frame)
+        self.selected_option.set("Select an option")
 
-    def withdraw(self):  # Method to withdraw money from users account
+        option_menu = tk.OptionMenu(self.depo_frame, self.selected_option, *account_types)
+        option_menu.grid(row=0, column=0, padx=3, pady=3)
+
+
+
+        # TODO: issue with menu labels popping up as its parameters
+        option_menu.bind("<ButtonRelease-1>", lambda event, arg=self.selected_option: self.on_option(event, arg))
+
+        self.submit_depo = tk.Button(self.depo_frame, text="Deposit", command=self.deposit)
+        self.submit_depo.grid(row=5, column=2, padx=3, pady=3)
+
+    def deposit(self): # Method to insert the money into the current users account
+        # fetch the current user
+        self.get_curr_user()
+        selected_type = self.selected_option.get()
+        # Getting the account id from the current user
+        self.cursor.execute("SELECT account_id FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s", (str(self.current_user), selected_type))
+        account_id = self.cursor.fetchone()
+        # SQL to deposit money into account
+
+        self.cursor.execute("UPDATE accounts SET balance = %s WHERE account_id = %s", (self.amount_entry.get(), account_id))
+
+        messagebox.showinfo("Success",f"${self.amount_entry.get()} deposited into account")
+
+        self.connection.commit()
+
+    def withdraw_money_menu(self):  # Method to withdraw money from users account
         pass
 
-    def transfer(self):  # Method to transfer funds from one account to another
+    def transfer_menu(self):  # Method to transfer funds from one account to another
         pass
 
     def add_card_menu(self):  # Method to add a card to the users account
@@ -415,7 +455,7 @@ class ATM:
     def add_card(self):
         try:
             # getting the id of the current user so we can use it to add the card to their account
-            self.cursor.execute("SELECT user_id FROM users WHERE username = %s", (str(self.current_user),))
+            self.get_curr_user()
             curr_id = self.cursor.fetchone() # id of the current user
 
             if curr_id:
@@ -431,7 +471,7 @@ class ATM:
     def generate_card(self):
         try:
             # Getting the current users id
-            self.cursor.execute("SELECT user_id FROM users WHERE username = %s", (str(self.current_user)))
+            self.get_curr_user()
             curr_id = self.cursor.fetchone()
 
             if curr_id:
@@ -444,7 +484,7 @@ class ATM:
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
-    def locations(self):  # Method to display ATM locations
+    def locations_menu(self):  # Method to display ATM locations
         pass
 
     def account_create_menu(self):  # Method to open an account within the logged-in user
