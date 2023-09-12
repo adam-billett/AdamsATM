@@ -412,9 +412,68 @@ class ATM:
         self.connection.commit()
 
     def withdraw_money_menu(self):  # Method to withdraw money from users account
-        pass
+        # Withdrawing the main window
+        self.main_frame.withdraw()
+        # Creating a new frame for withdrawing
+        self.withdraw_frame = tk.Toplevel(self.root)
+        self.withdraw_frame.geometry("300x300")
+        self.withdraw_frame.protocol("WM_DELETE_WINDOW", self.on_close)
+        # Get the current users id
+        self.get_curr_user()
+        # Get accounts from the current user
+        self.cursor.execute(
+            "SELECT account_type FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s)",
+            (str(self.current_user),))
+        user_accounts = self.cursor.fetchall()
+        account_types = [account[0] for account in user_accounts]
+        # drop down to select account to deposit into
+        self.selected_option = tk.StringVar(self.withdraw_frame)
+        self.selected_option.set("Select an option")
 
-    def transfer_menu(self):  # Method to transfer funds from one account to another
+        option_menu = tk.OptionMenu(self.withdraw_frame, self.selected_option, *account_types)
+        option_menu.grid(row=0, column=0, padx=3, pady=3)
+
+        # TODO: issue with menu labels popping up as its parameters
+        option_menu.bind("<ButtonRelease-1>", lambda event, arg=self.selected_option: self.on_option(event, arg))
+
+        self.withdraw_amount_lbl = tk.Label(self.withdraw_frame, text="Amount")
+        self.withdraw_amount_lbl.grid(row=1, column=0, padx=3, pady=3)
+
+        self.withdraw_amount_entry = tk.Entry(self.withdraw_frame)
+        self.withdraw_amount_entry.grid(row=1, column=1, padx=3, pady=3)
+
+        self.withdraw_btn = tk.Button(self.withdraw_frame, text="Withdraw", command=self.withdraw_money)
+        self.withdraw_btn.grid(row=2, column=2, padx=3, pady=3)
+
+    def withdraw_money(self):
+        # fetch the current user
+        self.get_curr_user()
+        selected_type = self.selected_option.get()
+        # Getting the account id from the current user
+        self.cursor.execute(
+            "SELECT account_id FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
+            (str(self.current_user), selected_type))
+        account_id = self.cursor.fetchone()
+        # Grabbing the current balance of the current user
+        self.cursor.execute("SELECT balance FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s", (str(self.current_user), selected_type))
+        balance_record = self.cursor.fetchone()
+
+        balance = balance_record[0]
+
+        # putting the amount to withdraw into a variable
+        amt_to_withdraw = self.withdraw_amount_entry.get()
+
+        # Updating by subtracting the amount from the current balance
+        updated_balance = balance - int(amt_to_withdraw)
+
+        # SQL to withdraw money from the current account
+        self.cursor.execute("UPDATE accounts SET balance = %s WHERE account_id = %s",
+                            (updated_balance, account_id))
+
+        messagebox.showinfo("Success", f"${self.withdraw_amount_entry.get()} withdrawn from account")
+        self.connection.commit()
+
+    def transfer_menu(self):  # Method to transfer funds from one account to another keep track or deposits and withdraws
         pass
 
     def add_card_menu(self):  # Method to add a card to the users account
