@@ -96,6 +96,7 @@ class ATM:
 
     def get_curr_user(self):
         self.cursor.execute("SELECT user_id FROM users WHERE username = %s", (str(self.current_user),))
+        return self.cursor.fetchone()
 
         # HIDING FRAME METHODS
 
@@ -184,7 +185,8 @@ class ATM:
             return
 
         try:
-            self.cursor.execute("SELECT password FROM users WHERE username = %s", (username,))
+            self.cursor.execute("SELECT password FROM users WHERE username = %s",
+                                (username,))
             db_password = self.cursor.fetchone()
 
             if db_password and db_password[0] == password:
@@ -205,7 +207,8 @@ class ATM:
         password = self.create_password.get()
         full_name = self.full_name_entry.get()
 
-        self.cursor.execute("SELECT username FROM users WHERE username = %s", (username,))
+        self.cursor.execute("SELECT username FROM users WHERE username = %s",
+                            (username,))
         existing_user = self.cursor.fetchone()
 
         if existing_user:
@@ -452,10 +455,15 @@ class ATM:
         updated_balance = balance + int(depo_amt)
 
         # SQL to update the balance
-        self.cursor.execute("UPDATE accounts SET balance = %s WHERE account_id = %s", (updated_balance, account_id))
+        self.cursor.execute("UPDATE accounts SET balance = %s WHERE account_id = %s",
+                            (updated_balance, account_id))
 
         # Message to how it is successful
         messagebox.showinfo("Success", f"${self.amount_entry.get()} deposited into account")
+
+        # Insert transaction into the transaction table
+        self.cursor.execute("INSERT INTO transactions (user_id, account_id, transaction_type, amount) VALUES (%s, %s, %s, %s)",
+                            (self.get_curr_user(), (account_id), ("Deposit"), (depo_amt)))
 
         self.connection.commit()
 
@@ -513,6 +521,11 @@ class ATM:
                             (updated_balance, account_id))
 
         messagebox.showinfo("Success", f"${self.withdraw_amount_entry.get()} withdrawn from account")
+
+        # Insert the transaction into the transactions table
+        self.cursor.execute("INSERT INTO transactions (user_id, account_id, transaction_type, amount) VALUES (%s, %s, %s, %s)",
+                            (self.get_curr_user(), account_id, "Withdraw", self.withdraw_amount_entry.get()))
+
         self.connection.commit()
 
     def transfer_menu(
@@ -559,6 +572,9 @@ class ATM:
 
         self.submit_transfer = tk.Button(self.transfer_frame, text="Submit", command=self.transfer)
         self.submit_transfer.grid(row=2, column=1, padx=3, pady=3)
+
+        self.back_btn = tk.Button(self.transfer_frame, text="Back", command=self.go_back_transfer)
+        self.back_btn.grid(row=3, column=1, padx=3, pady=3)
 
     def update_account_drop(self, *args):
         # Get the selected user from the dropdown
@@ -611,9 +627,14 @@ class ATM:
         transfer_amt = self.transfer_amt_entry.get()  # Get the amount to transfer
         selected_type = self.selected_option.get() # Get the account they selected on the main menu
 
+        # Get ID of the current account
+        self.cursor.execute("SELECT account_id FROM accounts WHERE user_id = %s", (self.get_curr_user()))
+        account_id = self.cursor.fetchone()
+
 
         # Get current users balance
-        self.cursor.execute("SELECT balance FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s", (str(self.current_user), selected_type))
+        self.cursor.execute("SELECT balance FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
+                            (str(self.current_user), selected_type))
         curr_bal = self.cursor.fetchone()  # logged-in users balance
         # taking the tuple and making it a var that is usable
         current_balance = curr_bal[0]
@@ -634,8 +655,12 @@ class ATM:
             self.cursor.execute("UPDATE accounts SET balance = %s WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
                                 (current_balance, str(self.current_user), selected_type))
             self.cursor.execute("UPDATE accounts SET balance = %s WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
-                                    (selected_bal, str(selected_user), selected_account))
+                                (selected_bal, str(selected_user), selected_account))
             messagebox.showinfo("Success", "Funds transferred")
+
+            # Inputing transaction into the database
+            self.cursor.execute("INSERT INTO transactions (user_id, account_id, transaction_type, amount) VALUES (%s, %s, %s, %s)",
+                                (self.get_curr_user(), account_id, "Transfer", transfer_amt))
             self.connection.commit()
         else:
             messagebox.showerror("Error", "Do not have the funds to transfer (Will not let you transfer down to 0")
@@ -682,13 +707,16 @@ class ATM:
     def add_card(self):
         try:
             # getting the id of the current user, so we can use it to add the card to their account
-            self.get_curr_user()
-            curr_id = self.cursor.fetchone()  # id of the current user
+            curr_id = self.get_curr_user()
 
             if curr_id:
                 self.cursor.execute(
                     "INSERT INTO card (user_id, card_number, expiration_date, cvv) VALUES (%s, %s, %s, %s)",
                     (curr_id[0], self.card_num_entry.get(), self.exp_date_entry.get(), self.ccv_entry.get()))
+
+                # Inserting into transaction table
+                self.cursor.execute("INSERT INTO transactions (user_id, transaction_type) VALUES (%s, %s)",
+                                    (self.get_curr_user(), "Add Card"))
                 self.connection.commit()
 
                 messagebox.showinfo("Card Added")
@@ -700,13 +728,18 @@ class ATM:
     def generate_card(self):
         try:
             # Getting the current users id
-            self.get_curr_user()
-            curr_id = self.cursor.fetchone()
+            curr_id = self.get_curr_user()
+
+            print(f"{curr_id}")
 
             if curr_id:
                 self.cursor.execute(
                     "INSERT INTO CARD (user_id, card_number, expiration_date, cvv) VALUES (%s, %s, %s, %s)",
                     (curr_id[0], self.generate_card_num(), self.generate_exp_date(), self.generate_ccv()))
+
+                # Adding transaction to transactions table
+                self.cursor.execute("INSERT INTO transactions (user_id, transaction_type) VALUES (%s, %s)",
+                                    (self.get_curr_user(), "Card Generate"))
                 self.connection.commit()
 
                 messagebox.showinfo("Card is on its way")
@@ -754,7 +787,8 @@ class ATM:
     def create_account(self):
         try:
             # Fetching the user id and balance of the current logged in user
-            self.cursor.execute("SELECT user_id FROM users WHERE username = %s", (str(self.current_user),))
+            self.cursor.execute("SELECT user_id FROM users WHERE username = %s",
+                                (str(self.current_user),))
             curr_id = self.cursor.fetchone()  # id of the current user
 
             if curr_id:
