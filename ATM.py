@@ -146,7 +146,7 @@ class ATM:
             self.eye_button.config(image=self.eye_icon)
         else:
             self.password.config(show="*")
-            self.eye_button.config(image=self.hide_eye_icon)
+            self.eye_button.config(image=self.eye_icon)
 
     def on_close(self):  # Closing the root from any window
         self.root.quit()
@@ -230,24 +230,20 @@ class ATM:
 
         # Creating the login frame
         self.login_frame = tk.Toplevel(self.root)
-        self.login_frame.geometry("300x150")
+        self.login_frame.geometry("300x200")
         self.login_frame.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.login_frame.title("Login")
+        self.login_frame.configure(bg="gray")
 
-        # Username label for login frame
-        self.username_lbl = tk.Label(self.login_frame, text="Username")
-        self.username_lbl.grid(row=0, column=0, padx=5, pady=5)
+        # Username label and entry
+        tk.Label(self.login_frame, text="Username:").grid(row=0, column=0, sticky="w")
+        self.username_entry = tk.Entry(self.login_frame)
+        self.username_entry.grid(row=0, column=1, padx=10, pady=5)
 
-        # Username entry
-        self.username = tk.Entry(self.login_frame)
-        self.username.grid(row=0, column=1, padx=5, pady=5)
-
-        # password label for login frame
-        self.password_lbl = tk.Label(self.login_frame, text="Password")
-        self.password_lbl.grid(row=1, column=0, padx=5, pady=5)
-
-        # password entry
+        # Password label, entry
+        tk.Label(self.login_frame, text="Login:").grid(row=1, column=0, sticky="w")
         self.password = tk.Entry(self.login_frame, show="*")
-        self.password.grid(row=1, column=1, padx=5, pady=5)
+        self.password.grid(row=1, column=1, padx=1, pady=(0, 2))
 
         # setting false so the password is show as ***
         self.show_password = False
@@ -256,25 +252,26 @@ class ATM:
         self.eye_icon = Image.open("eye.jpg")
         self.eye_icon = self.eye_icon.resize((20, 20))
         self.eye_icon = ImageTk.PhotoImage(self.eye_icon)
-        self.hide_eye_icon = Image.open("eye.jpg")
-        self.hide_eye_icon = self.hide_eye_icon.resize((20, 20))
-        self.hide_eye_icon = ImageTk.PhotoImage(self.hide_eye_icon)
 
         # eye button for show password
         self.eye_button = tk.Button(self.login_frame, image=self.eye_icon, command=self.toggle_password)
-        self.eye_button.grid(row=1, column=2, padx=5, pady=5)
+        self.eye_button.grid(row=2, columnspan=2)
 
         # login button at the bottom to confirm login
         self.login_btn = tk.Button(self.login_frame, text="Login", command=self.login)
-        self.login_btn.grid(row=2, column=1, padx=5, pady=5)
+        self.login_btn.grid(row=3, columnspan=2, pady=(2, 0))
 
         # link to go to create user window
         self.create_win = tk.Label(self.login_frame, text="Create user", fg="blue", cursor="hand2")
-        self.create_win.grid(row=3, column=1, padx=5, pady=5)
+        self.create_win.grid(row=4, columnspan=2, pady=(2, 0))
         self.create_win.bind("<Button-1>", lambda event: self.create_menu() and self.hide_login_ui())
-
         # Bind submit button to enter key
         self.password.bind("<Return>", lambda event: self.login())
+
+        # Center the login content
+        self.login_frame.grid_rowconfigure(0, weight=1)
+        self.login_frame.grid_columnconfigure(0, weight=1)
+
 
     def create_menu(self):
         self.login_frame.withdraw()
