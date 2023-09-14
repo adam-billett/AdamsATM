@@ -93,6 +93,7 @@ class ATM:
         self.connection.commit()
 
         # SQL STATEMENTS
+
     def get_curr_user(self):
         self.cursor.execute("SELECT user_id FROM users WHERE username = %s", (str(self.current_user),))
 
@@ -110,7 +111,7 @@ class ATM:
             self.login_frame.destroy()
         self.root.deiconify()
 
-    def go_back_depo(self): # Go back to main menu from depo
+    def go_back_depo(self):  # Go back to main menu from depo
         if self.depo_frame:
             self.depo_frame.destroy()
         self.main_frame.deiconify()
@@ -150,10 +151,11 @@ class ATM:
         self.root.quit()
 
         # RANDOM NUMBER GENERATORS
-    def generate_rand_num(self): # Generate a random 8 digit number for the account number
+
+    def generate_rand_num(self):  # Generate a random 8 digit number for the account number
         return str(random.randint(10000000, 99999999))
 
-    def generate_card_num(self): # Generate a random card number for the user
+    def generate_card_num(self):  # Generate a random card number for the user
         return str(random.randint(1000000000000000, 9999999999999999))
 
     def generate_exp_date(self):
@@ -163,7 +165,7 @@ class ATM:
 
         end_date = today + timedelta(days=(365 * max_years))
 
-        random_months = random.randint(0,11)
+        random_months = random.randint(0, 11)
         random_years = random.randint(0, max_years)
 
         expiration_date = today + timedelta(days=(random_years * 365 + random_months * 30))
@@ -277,7 +279,6 @@ class ATM:
         self.create_frame = tk.Toplevel(self.root)
         self.create_frame.geometry("300x150")
         self.create_frame.protocol("WM_DELETE_WINDOW", self.on_close)
-
 
         # Full name label
         self.full_name = tk.Label(self.create_frame, text="Full name")
@@ -393,7 +394,8 @@ class ATM:
         try:
             # Get users balance from database
             self.cursor.execute(
-                "SELECT balance FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s", # TODO: can only use once, then issues occur with drop down
+                "SELECT balance FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
+                # TODO: can only use once, then issues occur with drop down
                 (str(self.current_user), self.selected_option.get()))
             user_balance = self.cursor.fetchone()
 
@@ -426,12 +428,14 @@ class ATM:
         self.back_arrow = tk.Button(self.depo_frame, text="Back", command=self.go_back_depo)
         self.back_arrow.grid(row=7, column=3, padx=3, pady=3)
 
-    def deposit(self): # Method to insert the money into the current users account
+    def deposit(self):  # Method to insert the money into the current users account
         # fetch the current user
         self.get_curr_user()
         selected_type = self.selected_option.get()
         # Getting the account id from the current user
-        self.cursor.execute("SELECT account_id FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s", (str(self.current_user), selected_type))
+        self.cursor.execute(
+            "SELECT account_id FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
+            (str(self.current_user), selected_type))
         account_id = self.cursor.fetchone()
         # SQL to grab the current balance from user
         self.cursor.execute(
@@ -451,7 +455,7 @@ class ATM:
         self.cursor.execute("UPDATE accounts SET balance = %s WHERE account_id = %s", (updated_balance, account_id))
 
         # Message to how it is successful
-        messagebox.showinfo("Success",f"${self.amount_entry.get()} deposited into account")
+        messagebox.showinfo("Success", f"${self.amount_entry.get()} deposited into account")
 
         self.connection.commit()
 
@@ -480,7 +484,7 @@ class ATM:
         self.back_arrow_with = tk.Button(self.withdraw_frame, text="Back", command=self.go_back_withdraw)
         self.back_arrow_with.grid(row=3, column=3, padx=3, pady=3)
 
-    def withdraw_money(self): # Method that actually subtracts the amount from the database
+    def withdraw_money(self):  # Method that actually subtracts the amount from the database
         # fetch the current user
         self.get_curr_user()
         selected_type = self.selected_option.get()
@@ -490,7 +494,9 @@ class ATM:
             (str(self.current_user), selected_type))
         account_id = self.cursor.fetchone()
         # Grabbing the current balance of the current user
-        self.cursor.execute("SELECT balance FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s", (str(self.current_user), selected_type))
+        self.cursor.execute(
+            "SELECT balance FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
+            (str(self.current_user), selected_type))
         balance_record = self.cursor.fetchone()
 
         # taking the tuple var and turning it into an int
@@ -509,7 +515,8 @@ class ATM:
         messagebox.showinfo("Success", f"${self.withdraw_amount_entry.get()} withdrawn from account")
         self.connection.commit()
 
-    def transfer_menu(self):  # Method to transfer funds from one account to another keep track or deposits and withdraws
+    def transfer_menu(
+            self):  # Method to transfer funds from one account to another keep track or deposits and withdraws
 
         # Getting the ID of the current user
         self.get_curr_user()
@@ -533,49 +540,107 @@ class ATM:
         option_menu = tk.OptionMenu(self.transfer_frame, self.selected_user, *user_list)
         option_menu.grid(row=0, column=0, padx=3, pady=3)
 
-        # Binding when the user clicks to submit what they clicked
-        option_menu.bind("<ButtonRelease-1>", lambda event, arg=self.selected_user: self.on_option(event, arg))
+        self.selected_account = tk.StringVar(self.transfer_frame)
+        self.selected_account.set("Select Account")
+        options_menu = tk.OptionMenu(self.transfer_frame, self.selected_account, "Select Account")
+        options_menu.grid(row=0, column=1, padx=3, pady=3)
 
-        self.amount_transfer_lbl = tk.Label(self.transfer_frame, text="Amount")
-        self.amount_transfer_lbl.grid(row=1, column=1, padx=3, pady=3)
+        # Store a reference to the OptionMenu
+        self.option_menu_account = options_menu
 
-        self.amount_transfer_entry = tk.Entry(self.transfer_frame)
-        self.amount_transfer_entry.grid(row=1, column=2, padx=3, pady=3)
+        # Bind trace to selected_user
+        self.selected_user.trace_add("write", self.update_account_drop)
 
-        #TODO: ACCOUNTS DROP DOWN POPULATES BEFORE THE USER SELECTS A USER
+        self.transfer_amt = tk.Label(self.transfer_frame, text="Amount")
+        self.transfer_amt.grid(row=1, column=0, padx=3, pady=3)
 
-        if self.on_option:
-            selected_user = self.selected_user.get()
-            print(f"{selected_user}")
-            # DROP DOWN TO SELECT ACCOUNT OF THAT USER TO TRANSFER TO. CAN BE SAME USER DIFFERENT ACCOUNT Ex. user 6 from their checkings to their savings account
-            self.cursor.execute("SELECT account_type FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s)", (str(selected_user),))
+        self.transfer_amt_entry = tk.Entry(self.transfer_frame)
+        self.transfer_amt_entry.grid(row=1, column=1, padx=3, pady=3)
+
+        self.submit_transfer = tk.Button(self.transfer_frame, text="Submit", command=self.transfer)
+        self.submit_transfer.grid(row=2, column=1, padx=3, pady=3)
+
+    def update_account_drop(self, *args):
+        # Get the selected user from the dropdown
+        selected_user = self.selected_user.get()
+
+        if selected_user != "Select a user":
+            # Execute SQL query to fetch accounts for the selected user
+            self.cursor.execute(
+                "SELECT account_type FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s)",
+                (str(selected_user),))
             accounts = self.cursor.fetchall()
             account_list = [account[0] for account in accounts]
-            print(f"{account_list}")
 
+            # Reset the "Select Account" option
+            self.selected_account.set("Select Account")
+
+            # Populate account dropdown with the retreived account_list
+            self.populate_account_drop(account_list)
         else:
-            curr_user = self.get_curr_user
+            # If "Select a user" is chosen, fetch accounts for current user
+            curr_user = self.get_curr_user()
             self.cursor.execute(
-                "SELECT account_type FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %)",
+                "SELECT account_type FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s)",
                 (str(curr_user),))
             accounts = self.cursor.fetchall()
             account_list = [account[0] for account in accounts]
-            print(f"{account_list}")
 
-        self.selected_account = tk.StringVar(self.transfer_frame)
-        self.selected_account.set("Select Account")
+            # Reseting
+            self.selected_account.set("Select Account")
 
-        options_menu = tk.OptionMenu(self.transfer_frame, self.selected_account, f"{self.selected_account}", *account_list)
-        options_menu.grid(row=0, column=1, padx=3, pady=3)
+            # Populating with new account_list
+            self.populate_account_drop(account_list)
 
-        options_menu.bind("<ButtonRelease-1>", lambda event, arg=self.selected_account: self.on_option(event, arg))
+    def populate_account_drop(self, account_list):
+        # Access the menu of the OptionMenu widget
+        menu = self.option_menu_account["menu"]
 
+        # Delete existing options in the menu
+        menu.delete(0, "end")
 
-
-
+        # Add new account option to the menu
+        for account in account_list:
+            # User lambda to set teh selected_account var when an account is chosen
+            menu.add_command(label=account, command=lambda value=account: self.selected_account.set(value))
 
     def transfer(self):
-        pass
+        current_user = self.get_curr_user()  # Get the logged-in user
+        selected_user = self.selected_user.get()  # Get the selected user
+        selected_account = self.selected_account.get()  # Get the selected account
+        transfer_amt = self.transfer_amt_entry.get()  # Get the amount to transfer
+        selected_type = self.selected_option.get() # Get the account they selected on the main menu
+
+
+        # Get current users balance
+        self.cursor.execute("SELECT balance FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s", (str(self.current_user), selected_type))
+        curr_bal = self.cursor.fetchone()  # logged-in users balance
+        # taking the tuple and making it a var that is usable
+        current_balance = curr_bal[0]
+
+        # Get the selected users balance from the selected account
+        self.cursor.execute(
+            "SELECT balance FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
+            (str(selected_user), selected_account))
+        sel_balance = self.cursor.fetchone()  # Selected users balance
+        # Moving tuple
+        selected_bal = sel_balance[0]
+
+        # If else to ensure they have the funds to transfer
+        if current_balance > int(transfer_amt):
+                # Take amount out of current user and add it to the selected account and user
+            current_balance -= int(transfer_amt)
+            selected_bal += int(transfer_amt)
+            self.cursor.execute("UPDATE accounts SET balance = %s WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
+                                (current_balance, str(self.current_user), selected_type))
+            self.cursor.execute("UPDATE accounts SET balance = %s WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
+                                    (selected_bal, str(selected_user), selected_account))
+            messagebox.showinfo("Success", "Funds transferred")
+            self.connection.commit()
+        else:
+            messagebox.showerror("Error", "Do not have the funds to transfer (Will not let you transfer down to 0")
+
+
     def add_card_menu(self):  # Method to add a card to the users account
         # Withdrawing the main frame
         self.main_frame.withdraw()
@@ -618,10 +683,12 @@ class ATM:
         try:
             # getting the id of the current user, so we can use it to add the card to their account
             self.get_curr_user()
-            curr_id = self.cursor.fetchone() # id of the current user
+            curr_id = self.cursor.fetchone()  # id of the current user
 
             if curr_id:
-                self.cursor.execute("INSERT INTO card (user_id, card_number, expiration_date, cvv) VALUES (%s, %s, %s, %s)", (curr_id[0], self.card_num_entry.get(), self.exp_date_entry.get(), self.ccv_entry.get()))
+                self.cursor.execute(
+                    "INSERT INTO card (user_id, card_number, expiration_date, cvv) VALUES (%s, %s, %s, %s)",
+                    (curr_id[0], self.card_num_entry.get(), self.exp_date_entry.get(), self.ccv_entry.get()))
                 self.connection.commit()
 
                 messagebox.showinfo("Card Added")
@@ -637,7 +704,9 @@ class ATM:
             curr_id = self.cursor.fetchone()
 
             if curr_id:
-                self.cursor.execute("INSERT INTO CARD (user_id, card_number, expiration_date, cvv) VALUES (%s, %s, %s, %s)", (curr_id[0], self.generate_card_num(), self.generate_exp_date(), self.generate_ccv()))
+                self.cursor.execute(
+                    "INSERT INTO CARD (user_id, card_number, expiration_date, cvv) VALUES (%s, %s, %s, %s)",
+                    (curr_id[0], self.generate_card_num(), self.generate_exp_date(), self.generate_ccv()))
                 self.connection.commit()
 
                 messagebox.showinfo("Card is on its way")
@@ -679,24 +748,22 @@ class ATM:
         self.back_account = tk.Button(self.account_frame, text="Back", command=self.go_back_account)
         self.back_account.grid(row=3, column=3, padx=3, pady=3)
 
-
-
-
-    def on_option(self, event, selected_option): # Drop down
+    def on_option(self, event, selected_option):  # Drop down
         selected_option.set(selected_option.get())
-
 
     def create_account(self):
         try:
-        # Fetching the user id and balance of the current logged in user
+            # Fetching the user id and balance of the current logged in user
             self.cursor.execute("SELECT user_id FROM users WHERE username = %s", (str(self.current_user),))
-            curr_id = self.cursor.fetchone() # id of the current user
+            curr_id = self.cursor.fetchone()  # id of the current user
 
             if curr_id:
                 # Generate a random 8-digit account number
                 account_number = self.generate_rand_num()
                 # Inserting their user id, the acc number, their balance, and type of account
-                self.cursor.execute("INSERT INTO accounts (user_id, account_number, balance, account_type) VALUES (%s, %s, %s, %s)", (curr_id[0], account_number, 0.0, self.type_entry.get()))
+                self.cursor.execute(
+                    "INSERT INTO accounts (user_id, account_number, balance, account_type) VALUES (%s, %s, %s, %s)",
+                    (curr_id[0], account_number, 0.0, self.type_entry.get()))
                 self.connection.commit()
 
                 messagebox.showinfo("Account Created")
@@ -704,7 +771,6 @@ class ATM:
                 messagebox.showerror("Error", "some sort of error")
         except Exception as e:
             messagebox.showerror("Error", str(e))
-
 
     def logout(self):  # Method to log out the current user
         # todo: BUG FIX CAN ONLY LOGOUT ONCE THEN THE BUTTON STOPS WORKING
