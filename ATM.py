@@ -4,6 +4,7 @@ from logging import root
 from tkinter import messagebox
 from tkinter import ttk
 from tabulate import tabulate
+import customtkinter as ctk
 
 import psycopg2
 import sys
@@ -15,10 +16,12 @@ from PIL import Image, ImageTk
 
 
 class ATM:
-    def __init__(self, root):
-        self.selected_option = None
-        self.root = root
-        self.root.title("Adams ATM")
+    def __init__(self, app):
+        ctk.set_appearance_mode("dark")
+
+        self.app = app
+        self.app.geometry("400x400")
+        self.app.title("Adams ATM")
 
         self.show_frame = True
 
@@ -27,16 +30,20 @@ class ATM:
         self.login_menu()
 
         # Connecting to the DB using a try block
-        self.connection = psycopg2.connect(
-            dbname="ATM",
-            user="postgres",
-            password="Bearcat",
-            host="localhost",
-            port="5432"
-        )
-        self.cursor = self.connection.cursor()
+        try:
+            self.connection = psycopg2.connect(
+                dbname="ATM",
+                user="postgres",
+                password="Bearcat",
+                host="localhost",
+                port="5432"
+            )
+            self.cursor = self.connection.cursor()
+        except psycopg2.Error as e:
+            print("Error connecting to the database: ", e)
 
         self.create_tables()
+
 
         # SQL creating tables
 
@@ -149,7 +156,7 @@ class ATM:
             self.eye_button.config(image=self.eye_icon)
 
     def on_close(self):  # Closing the root from any window
-        self.root.quit()
+        self.app.quit()
 
         # RANDOM NUMBER GENERATORS
 
@@ -191,16 +198,18 @@ class ATM:
 
             if db_password and db_password[0] == password:
                 self.current_user = username
+                self.app.withdraw()
                 messagebox.showinfo("Login successful")
                 self.password.delete(0, tk.END)
-                self.root.withdraw()
+
                 # Main menu display
                 self.main_menu(username)
             else:
                 messagebox.showerror("Invalid username or password")
 
         except Exception as e:
-            messagebox.showerror("Error", str(e))
+            # TODO: POSSIBLE ERROR HERE DEALING WITH CTK ERROR, BAD SCREEN DISTANCE "SELECT AN OPTION"
+            messagebox.showerror("HERE is the error", str(e))
 
     def create(self):  # Method to create a new user TODO: create method
         username = self.create_user_entry.get()
@@ -226,92 +235,85 @@ class ATM:
         # MENU'S
 
     def login_menu(self):  # Login menu when first starting
-        self.root.withdraw()
+        self.login_window = ctk.CTkToplevel(self.app)
+        self.login_window.title("Login")
+        self.login_window.geometry("500x400")
+        self.login_window.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.app.withdraw()
 
-        # Creating the login frame
-        self.login_frame = tk.Toplevel(self.root)
-        self.login_frame.geometry("300x200")
-        self.login_frame.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.login_frame.title("Login")
-        self.login_frame.configure(bg="gray")
+        # Main message for window
+        self.label = ctk.CTkLabel(self.login_window,text="Welcome to Adams ATM")
+        self.label.pack(pady=20)
 
-        # Username label and entry
-        tk.Label(self.login_frame, text="Username:").grid(row=0, column=0, sticky="w")
-        self.username_entry = tk.Entry(self.login_frame)
-        self.username_entry.grid(row=0, column=1, padx=10, pady=5)
+        # Create a frame
+        self.login_frame = ctk.CTkFrame(master=self.login_window)
+        self.login_frame.pack(pady=20, padx=40, fill='both', expand=True)
 
-        # Password label, entry
-        tk.Label(self.login_frame, text="Login:").grid(row=1, column=0, sticky="w")
-        self.password = tk.Entry(self.login_frame, show="*")
-        self.password.grid(row=1, column=1, padx=1, pady=(0, 2))
+        # Set Label inside of frame
+        self.label = ctk.CTkLabel(master=self.login_frame, text="Adams ATM")
+        self.label.pack(pady=12, padx=10)
 
-        # setting false so the password is show as ***
-        self.show_password = False
+        # Create text box for taking username input
+        self.username = ctk.CTkEntry(master=self.login_frame, placeholder_text="Username")
+        self.username.pack(pady=12, padx=10)
 
-        # inserting the eye icon to toggle the password on and off
-        self.eye_icon = Image.open("eye.jpg")
-        self.eye_icon = self.eye_icon.resize((20, 20))
-        self.eye_icon = ImageTk.PhotoImage(self.eye_icon)
+        # Create text box for taking password input
+        self.password = ctk.CTkEntry(master=self.login_frame, placeholder_text="Password", show="*")
+        self.password.pack(pady=12, padx=10)
 
-        # eye button for show password
-        self.eye_button = tk.Button(self.login_frame, image=self.eye_icon, command=self.toggle_password)
-        self.eye_button.grid(row=2, columnspan=2)
+        # Create a login button
+        self.login_btn = ctk.CTkButton(master=self.login_frame, text='Login', command=self.login)
+        self.login_btn.pack(pady=12, padx=10)
 
-        # login button at the bottom to confirm login
-        self.login_btn = tk.Button(self.login_frame, text="Login", command=self.login)
-        self.login_btn.grid(row=3, columnspan=2, pady=(2, 0))
+        # Create a create user link
+        self.create_btn = ctk.CTkButton(master=self.login_frame, text='Create User', command=self.create_menu)
+        self.create_btn.pack(pady=12, padx=10)
 
-        # link to go to create user window
-        self.create_win = tk.Label(self.login_frame, text="Create user", fg="blue", cursor="hand2")
-        self.create_win.grid(row=4, columnspan=2, pady=(2, 0))
-        self.create_win.bind("<Button-1>", lambda event: self.create_menu() and self.hide_login_ui())
-        # Bind submit button to enter key
+        # Bind the enter key to login
         self.password.bind("<Return>", lambda event: self.login())
-
-        # Center the login content
-        self.login_frame.grid_rowconfigure(0, weight=1)
-        self.login_frame.grid_columnconfigure(0, weight=1)
-
-
+        self.username.bind("<Return>", lambda event: self.login())
     def create_menu(self):
-        self.login_frame.withdraw()
-        self.root.withdraw()
-        self.create_frame = tk.Toplevel(self.root)
-        self.create_frame.geometry("300x150")
+        self.login_window.withdraw()
+        self.app.withdraw()
+        self.create_frame = ctk.CTkToplevel(self.app)
+        self.create_frame.geometry("300x200")
         self.create_frame.protocol("WM_DELETE_WINDOW", self.on_close)
 
         # Full name label
-        self.full_name = tk.Label(self.create_frame, text="Full name")
+        self.full_name = ctk.CTkLabel(self.create_frame, text="Full name")
         self.full_name.grid(row=0, column=0, padx=3, pady=3)
 
         # Full name entry
-        self.full_name_entry = tk.Entry(self.create_frame)
+        self.full_name_entry = ctk.CTkEntry(self.create_frame)
         self.full_name_entry.grid(row=0, column=1, padx=3, pady=3)
 
         # username create label
-        self.create_user = tk.Label(self.create_frame, text="Username")
+        self.create_user = ctk.CTkLabel(self.create_frame, text="Username")
         self.create_user.grid(row=1, column=0, padx=3, pady=3)
 
         # create username entry
-        self.create_user_entry = tk.Entry(self.create_frame)
+        self.create_user_entry = ctk.CTkEntry(self.create_frame)
         self.create_user_entry.grid(row=1, column=1, padx=3, pady=3)
 
         # create password label
-        self.create_password_lbl = tk.Label(self.create_frame, text="Password")
+        self.create_password_lbl = ctk.CTkLabel(self.create_frame, text="Password")
         self.create_password_lbl.grid(row=2, column=0, padx=3, pady=3)
 
         # create password entry
-        self.create_password = tk.Entry(self.create_frame, show="*")
+        self.create_password = ctk.CTkEntry(self.create_frame, show="*")
         self.create_password.grid(row=2, column=1, padx=3, pady=3)
 
         # Create button to submit user creating
-        self.create_sub = tk.Button(self.create_frame, text="create", command=self.create)
+        self.create_sub = ctk.CTkButton(self.create_frame, text="create", command=self.create)
         self.create_sub.grid(row=3, column=1, padx=3, pady=3)
 
         # link to go back to the login frame
-        self.back_login = tk.Label(self.create_frame, text="Back to Login", fg="blue", cursor="hand2")
+        self.back_login = ctk.CTkLabel(self.create_frame, text="Back to Login", cursor="hand2")
         self.back_login.grid(row=4, column=1, padx=3, pady=3)
         self.back_login.bind("<Button-1>", lambda event: self.hide_create_ui() and self.login_menu())
+
+        # Apply styling to the back to login label
+        self.back_login.configure(font=("Helvetica", 10, "underline"))
 
         # binds the enter key to submit button
         self.create_password.bind("<Return>", lambda event: self.create())
@@ -328,9 +330,9 @@ class ATM:
         if hasattr(self, "main_frame"):
             self.main_frame.destroy()
 
-        self.login_frame.withdraw()
+        self.login_window.withdraw()
 
-        self.main_frame = tk.Toplevel(self.root)
+        self.main_frame = ctk.CTkToplevel(self.app)
         self.main_frame.geometry("500x500")
         self.main_frame.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -342,49 +344,51 @@ class ATM:
         user_accounts = self.cursor.fetchall()
         account_types = [account[0] for account in user_accounts]
         # drop down to select account to deposit into
-        self.selected_option = tk.StringVar(self.main_frame)
-        self.selected_option.set("Select an option")
 
-        option_menu = tk.OptionMenu(self.main_frame, self.selected_option, *account_types)
+        account_types.insert(0, "Select an option")
+        # TODO: POSSIBLE ERROR HERE DEALING WITH CTK ERROR, BAD SCREEN DISTANCE "SELECT AN OPTION"
+
+        self.selected_option = "Select an option"
+
+        option_menu = ctk.CTkOptionMenu(self.main_frame, self.selected_option, *account_types)
         option_menu.grid(row=0, column=0, padx=3, pady=3)
 
-        # TODO: issue with menu labels popping up as its parameters
-        option_menu.bind("<ButtonRelease-1>", lambda event, arg=self.selected_option: self.on_option(event, arg))
+        option_menu.bind("<ButtonRelease-1>", lambda event, arg=self.selected_option: self.on_option(event, self.selected_option))
 
         # Display for current user
-        self.current_user_label = tk.Label(self.main_frame, text=current_user)
+        self.current_user_label = ctk.CTkLabel(self.main_frame, text=current_user)
         self.current_user_label.grid(row=0, column=5, padx=10, pady=10)
 
         # check balance button
-        self.bal_btn = tk.Button(self.main_frame, text="Balance", command=self.check_bal)
+        self.bal_btn = ctk.CTkButton(self.main_frame, text="Balance", command=self.check_bal)
         self.bal_btn.grid(row=1, column=0, padx=3, pady=3)
 
         # Deposit button
-        self.depo_btn = tk.Button(self.main_frame, text="Deposit", command=self.deposit_menu)
+        self.depo_btn = ctk.CTkButton(self.main_frame, text="Deposit", command=self.deposit_menu)
         self.depo_btn.grid(row=2, column=0, padx=3, pady=3)
 
         # Withdraw button
-        self.with_btn = tk.Button(self.main_frame, text="Withdraw", command=self.withdraw_money_menu)
+        self.with_btn = ctk.CTkButton(self.main_frame, text="Withdraw", command=self.withdraw_money_menu)
         self.with_btn.grid(row=3, column=0, padx=3, pady=3)
 
         # Transfer Button
-        self.transfer_btn = tk.Button(self.main_frame, text="Transfer", command=self.transfer_menu)
+        self.transfer_btn = ctk.CTkButton(self.main_frame, text="Transfer", command=self.transfer_menu)
         self.transfer_btn.grid(row=4, column=0, padx=3, pady=3)
 
         # Add a Card
-        self.card_btn = tk.Button(self.main_frame, text="Add Card", command=self.add_card_menu)
+        self.card_btn = ctk.CTkButton(self.main_frame, text="Add Card", command=self.add_card_menu)
         self.card_btn.grid(row=5, column=0, padx=3, pady=3)
 
         # Check the location's button
-        self.locations_btn = tk.Button(self.main_frame, text="Locations", command=self.locations_menu)
+        self.locations_btn = ctk.CTkButton(self.main_frame, text="Locations", command=self.locations_menu)
         self.locations_btn.grid(row=6, column=0, padx=3, pady=3)
 
         # Open an account button
-        self.account_btn = tk.Button(self.main_frame, text="Create Account", command=self.account_create_menu)
+        self.account_btn = ctk.CTkButton(self.main_frame, text="Create Account", command=self.account_create_menu)
         self.account_btn.grid(row=7, column=0, padx=3, pady=3)
 
         # Exit/Logout button
-        self.logout = tk.Button(self.main_frame, text="Logout", command=self.logout)
+        self.logout = ctk.CTkButton(self.main_frame, text="Logout", command=self.logout)
         self.logout.grid(row=8, column=0, padx=3, pady=3)
 
         # MAIN MENU METHODS
@@ -779,7 +783,7 @@ class ATM:
         self.back_account.grid(row=3, column=3, padx=3, pady=3)
 
     def on_option(self, event, selected_option):  # Drop down
-        selected_option.set(selected_option.get())
+        selected_option = self.selected_option
 
     def create_account(self):
         try:
@@ -815,9 +819,10 @@ class ATM:
 
 
 def main():
-    root = tk.Tk()
+    root= ctk.CTk()
     atm = ATM(root)
     root.mainloop()
+
 
 
 if __name__ == "__main__":
