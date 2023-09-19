@@ -199,7 +199,6 @@ class ATM:
             if db_password and db_password[0] == password:
                 self.current_user = username
                 self.app.withdraw()
-                messagebox.showinfo("Login successful")
                 self.password.delete(0, tk.END)
 
                 # Main menu display
@@ -237,12 +236,12 @@ class ATM:
     def login_menu(self):  # Login menu when first starting
         self.login_window = ctk.CTkToplevel(self.app)
         self.login_window.title("Login")
-        self.login_window.geometry("500x400")
+        self.login_window.geometry("325x375")
         self.login_window.protocol("WM_DELETE_WINDOW", self.on_close)
         self.app.withdraw()
 
         # Main message for window
-        self.label = ctk.CTkLabel(self.login_window,text="Welcome to Adams ATM")
+        self.label = ctk.CTkLabel(self.login_window, text="Welcome to Adams ATM")
         self.label.pack(pady=20)
 
         # Create a frame
@@ -276,40 +275,28 @@ class ATM:
         self.login_window.withdraw()
         self.app.withdraw()
         self.create_frame = ctk.CTkToplevel(self.app)
-        self.create_frame.geometry("300x200")
+        self.create_frame.geometry("300x225")
         self.create_frame.protocol("WM_DELETE_WINDOW", self.on_close)
 
         # Full name label
-        self.full_name = ctk.CTkLabel(self.create_frame, text="Full name")
-        self.full_name.grid(row=0, column=0, padx=3, pady=3)
-
-        # Full name entry
-        self.full_name_entry = ctk.CTkEntry(self.create_frame)
-        self.full_name_entry.grid(row=0, column=1, padx=3, pady=3)
-
-        # username create label
-        self.create_user = ctk.CTkLabel(self.create_frame, text="Username")
-        self.create_user.grid(row=1, column=0, padx=3, pady=3)
+        self.full_name = ctk.CTkEntry(master=self.create_frame, placeholder_text="Full Name")
+        self.full_name.pack(pady=8, padx=4)
 
         # create username entry
-        self.create_user_entry = ctk.CTkEntry(self.create_frame)
-        self.create_user_entry.grid(row=1, column=1, padx=3, pady=3)
-
-        # create password label
-        self.create_password_lbl = ctk.CTkLabel(self.create_frame, text="Password")
-        self.create_password_lbl.grid(row=2, column=0, padx=3, pady=3)
+        self.create_user_entry = ctk.CTkEntry(master=self.create_frame, placeholder_text="Username")
+        self.create_user_entry.pack(pady=8, padx=4)
 
         # create password entry
-        self.create_password = ctk.CTkEntry(self.create_frame, show="*")
-        self.create_password.grid(row=2, column=1, padx=3, pady=3)
+        self.create_password = ctk.CTkEntry(self.create_frame, placeholder_text="Password", show="*")
+        self.create_password.pack(pady=8, padx=4)
 
         # Create button to submit user creating
         self.create_sub = ctk.CTkButton(self.create_frame, text="create", command=self.create)
-        self.create_sub.grid(row=3, column=1, padx=3, pady=3)
+        self.create_sub.pack(pady=8, padx=4)
 
         # link to go back to the login frame
         self.back_login = ctk.CTkLabel(self.create_frame, text="Back to Login", cursor="hand2")
-        self.back_login.grid(row=4, column=1, padx=3, pady=3)
+        self.back_login.pack(pady=8, padx=4)
         self.back_login.bind("<Button-1>", lambda event: self.hide_create_ui() and self.login_menu())
 
         # Apply styling to the back to login label
@@ -345,51 +332,56 @@ class ATM:
         account_types = [account[0] for account in user_accounts]
         # drop down to select account to deposit into
 
-        account_types.insert(0, "Select an option")
+        account_types.insert(0, "Select an account")
         # TODO: POSSIBLE ERROR HERE DEALING WITH CTK ERROR, BAD SCREEN DISTANCE "SELECT AN OPTION"
 
-        self.selected_option = "Select an option"
+        self.selected_option = tk.StringVar(self.main_frame)
+        self.selected_option.set("Select an account")
 
-        option_menu = ctk.CTkOptionMenu(self.main_frame, self.selected_option, *account_types)
-        option_menu.grid(row=0, column=0, padx=3, pady=3)
+        option_menu_style = ttk.Style()
+        option_menu_style.configure("Custom.TMenubutton", background="grey", padding=5)
+        option_menu_style.configure("Custom.TMenubutton.TButton", relief="flat")
+
+        option_menu = ttk.OptionMenu(self.main_frame, self.selected_option, *account_types, style="Custom.TMenubutton")
+        option_menu.pack(pady=8, padx=4)
 
         option_menu.bind("<ButtonRelease-1>", lambda event, arg=self.selected_option: self.on_option(event, self.selected_option))
 
         # Display for current user
-        self.current_user_label = ctk.CTkLabel(self.main_frame, text=current_user)
-        self.current_user_label.grid(row=0, column=5, padx=10, pady=10)
+        self.current_user_label = ctk.CTkLabel(master=self.main_frame, text=current_user)
+        self.current_user_label.pack(pady=8, padx=4)
 
         # check balance button
-        self.bal_btn = ctk.CTkButton(self.main_frame, text="Balance", command=self.check_bal)
-        self.bal_btn.grid(row=1, column=0, padx=3, pady=3)
+        self.bal_btn = ctk.CTkButton(master=self.main_frame, text="Balance", command=self.check_bal)
+        self.bal_btn.pack(pady=8, padx=4)
 
         # Deposit button
-        self.depo_btn = ctk.CTkButton(self.main_frame, text="Deposit", command=self.deposit_menu)
-        self.depo_btn.grid(row=2, column=0, padx=3, pady=3)
+        self.depo_btn = ctk.CTkButton(master=self.main_frame, text="Deposit", command=self.deposit_menu)
+        self.depo_btn.pack(pady=8, padx=4)
 
         # Withdraw button
-        self.with_btn = ctk.CTkButton(self.main_frame, text="Withdraw", command=self.withdraw_money_menu)
-        self.with_btn.grid(row=3, column=0, padx=3, pady=3)
+        self.with_btn = ctk.CTkButton(master=self.main_frame, text="Withdraw", command=self.withdraw_money_menu)
+        self.with_btn.pack(pady=8, padx=4)
 
         # Transfer Button
-        self.transfer_btn = ctk.CTkButton(self.main_frame, text="Transfer", command=self.transfer_menu)
-        self.transfer_btn.grid(row=4, column=0, padx=3, pady=3)
+        self.transfer_btn = ctk.CTkButton(master=self.main_frame, text="Transfer", command=self.transfer_menu)
+        self.transfer_btn.pack(pady=8, padx=4)
 
         # Add a Card
-        self.card_btn = ctk.CTkButton(self.main_frame, text="Add Card", command=self.add_card_menu)
-        self.card_btn.grid(row=5, column=0, padx=3, pady=3)
+        self.card_btn = ctk.CTkButton(master=self.main_frame, text="Add Card", command=self.add_card_menu)
+        self.card_btn.pack(pady=8, padx=4)
 
         # Check the location's button
-        self.locations_btn = ctk.CTkButton(self.main_frame, text="Locations", command=self.locations_menu)
-        self.locations_btn.grid(row=6, column=0, padx=3, pady=3)
+        self.locations_btn = ctk.CTkButton(master=self.main_frame, text="Locations", command=self.locations_menu)
+        self.locations_btn.pack(pady=8, padx=4)
 
         # Open an account button
-        self.account_btn = ctk.CTkButton(self.main_frame, text="Create Account", command=self.account_create_menu)
-        self.account_btn.grid(row=7, column=0, padx=3, pady=3)
+        self.account_btn = ctk.CTkButton(master=self.main_frame, text="Create Account", command=self.account_create_menu)
+        self.account_btn.pack(pady=8, padx=4)
 
         # Exit/Logout button
-        self.logout = ctk.CTkButton(self.main_frame, text="Logout", command=self.logout)
-        self.logout.grid(row=8, column=0, padx=3, pady=3)
+        self.logout = ctk.CTkButton(master=self.main_frame, text="Logout", command=self.logout)
+        self.logout.pack(pady=8, padx=4)
 
         # MAIN MENU METHODS
 
@@ -415,22 +407,21 @@ class ATM:
         # Deposit to display on main frame
         self.main_frame.withdraw()
         # Creating a new frame for deposit
-        self.depo_frame = tk.Toplevel(self.root)
+        self.depo_frame = ctk.CTkToplevel(self.app)
         self.depo_frame.geometry("500x500")
         self.depo_frame.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.amount_lbl = tk.Label(self.depo_frame, text="Amount")
-        self.amount_lbl.grid(row=4, column=0, padx=3, pady=3)
+
         # Amount entry box
-        self.amount_entry = tk.Entry(self.depo_frame)
-        self.amount_entry.grid(row=4, column=1, padx=3, pady=3)
+        self.amount_entry = ctk.CTkEntry(master=self.depo_frame, placeholder_text="Amount")
+        self.amount_entry.pack(pady=8, padx=4)
         # Get the current users id
         self.get_curr_user()
 
-        self.submit_depo = tk.Button(self.depo_frame, text="Deposit", command=self.deposit)
-        self.submit_depo.grid(row=5, column=2, padx=3, pady=3)
+        self.submit_depo = ctk.CTkButton(master=self.depo_frame, text="Deposit", command=self.deposit)
+        self.submit_depo.pack(pady=8, padx=4)
 
-        self.back_arrow = tk.Button(self.depo_frame, text="Back", command=self.go_back_depo)
-        self.back_arrow.grid(row=7, column=3, padx=3, pady=3)
+        self.back_arrow = ctk.CTkButton(master=self.depo_frame, text="Back", command=self.go_back_depo)
+        self.back_arrow.pack(pady=8, padx=4)
 
     def deposit(self):  # Method to insert the money into the current users account
         # fetch the current user
@@ -472,26 +463,24 @@ class ATM:
         # Withdrawing the main window
         self.main_frame.withdraw()
         # Creating a new frame for withdrawing
-        self.withdraw_frame = tk.Toplevel(self.root)
+        self.withdraw_frame = ctk.CTkToplevel(self.app)
         self.withdraw_frame.geometry("300x300")
         self.withdraw_frame.protocol("WM_DELETE_WINDOW", self.on_close)
         # Get the current users id
         self.get_curr_user()
 
         # Amount to withdraw label
-        self.withdraw_amount_lbl = tk.Label(self.withdraw_frame, text="Amount")
-        self.withdraw_amount_lbl.grid(row=1, column=0, padx=3, pady=3)
 
         # Amount to withdraw entry
-        self.withdraw_amount_entry = tk.Entry(self.withdraw_frame)
-        self.withdraw_amount_entry.grid(row=1, column=1, padx=3, pady=3)
+        self.withdraw_amount_entry = ctk.CTkEntry(self.withdraw_frame, placeholder_text="Amount")
+        self.withdraw_amount_entry.pack(pady=8, padx=4)
 
         # Withdraw button to submit the withdraw
-        self.withdraw_btn = tk.Button(self.withdraw_frame, text="Withdraw", command=self.withdraw_money)
-        self.withdraw_btn.grid(row=2, column=2, padx=3, pady=3)
+        self.withdraw_btn = ctk.CTkButton(self.withdraw_frame, text="Withdraw", command=self.withdraw_money)
+        self.withdraw_btn.pack(pady=8, padx=4)
 
-        self.back_arrow_with = tk.Button(self.withdraw_frame, text="Back", command=self.go_back_withdraw)
-        self.back_arrow_with.grid(row=3, column=3, padx=3, pady=3)
+        self.back_arrow_with = ctk.CTkButton(self.withdraw_frame, text="Back", command=self.go_back_withdraw)
+        self.back_arrow_with.pack(pady=8, padx=4)
 
     def withdraw_money(self):  # Method that actually subtracts the amount from the database
         # fetch the current user
@@ -515,22 +504,24 @@ class ATM:
         amt_to_withdraw = self.withdraw_amount_entry.get()
 
         # Updating by subtracting the amount from the current balance
-        updated_balance = balance - int(amt_to_withdraw)
+        if int(amt_to_withdraw) > balance:
+            messagebox.showerror("Insufficient funds", "Cannot take out more than what you have")
+        else:
+            updated_balance = balance - int(amt_to_withdraw)
 
         # SQL to withdraw money from the current account
-        self.cursor.execute("UPDATE accounts SET balance = %s WHERE account_id = %s",
-                            (updated_balance, account_id))
+            self.cursor.execute("UPDATE accounts SET balance = %s WHERE account_id = %s",
+                                (updated_balance, account_id))
 
-        messagebox.showinfo("Success", f"${self.withdraw_amount_entry.get()} withdrawn from account")
+            messagebox.showinfo("Success", f"${self.withdraw_amount_entry.get()} withdrawn from account")
 
         # Insert the transaction into the transactions table
-        self.cursor.execute("INSERT INTO transactions (user_id, account_id, transaction_type, amount) VALUES (%s, %s, %s, %s)",
-                            (self.get_curr_user(), account_id, "Withdraw", self.withdraw_amount_entry.get()))
+            self.cursor.execute("INSERT INTO transactions (user_id, account_id, transaction_type, amount) VALUES (%s, %s, %s, %s)",
+                                (self.get_curr_user(), account_id, "Withdraw", self.withdraw_amount_entry.get()))
 
-        self.connection.commit()
+            self.connection.commit()
 
-    def transfer_menu(
-            self):  # Method to transfer funds from one account to another keep track or deposits and withdraws
+    def transfer_menu(self):  # Method to transfer funds from one account to another keep track or deposits and withdraws
 
         # Getting the ID of the current user
         self.get_curr_user()
@@ -538,7 +529,7 @@ class ATM:
         self.main_frame.withdraw()
 
         # Creating a new frame for the transfer menu
-        self.transfer_frame = tk.Toplevel(self.root)
+        self.transfer_frame = ctk.CTkToplevel(self.app)
         self.transfer_frame.geometry('300x300')
         self.transfer_frame.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -548,16 +539,23 @@ class ATM:
         # taking the tuple and putting it into a list the menu can use
         user_list = [user[0] for user in users]
         # Drop down menu
+
         self.selected_user = tk.StringVar(self.transfer_frame)
         self.selected_user.set("Select a user")
+
+        option_menu_style = ttk.Style()
+        option_menu_style.configure("Custom.TMenubutton", background="grey", padding=5)
+        option_menu_style.configure("Custom.TMenubutton.TButton", relief="flat")
+
         # Displaying the options in the drop-down menu
-        option_menu = tk.OptionMenu(self.transfer_frame, self.selected_user, *user_list)
-        option_menu.grid(row=0, column=0, padx=3, pady=3)
+        option_menu = ttk.OptionMenu(self.transfer_frame, self.selected_user, *user_list, style="Custom.TMenubutton")
+        option_menu.pack(pady=8, padx=4)
 
         self.selected_account = tk.StringVar(self.transfer_frame)
         self.selected_account.set("Select Account")
-        options_menu = tk.OptionMenu(self.transfer_frame, self.selected_account, "Select Account")
-        options_menu.grid(row=0, column=1, padx=3, pady=3)
+
+        options_menu = ttk.OptionMenu(self.transfer_frame, self.selected_account, "Select Account", style="Custom.TMenubutton")
+        options_menu.pack(pady=8, padx=4)
 
         # Store a reference to the OptionMenu
         self.option_menu_account = options_menu
@@ -565,17 +563,14 @@ class ATM:
         # Bind trace to selected_user
         self.selected_user.trace_add("write", self.update_account_drop)
 
-        self.transfer_amt = tk.Label(self.transfer_frame, text="Amount")
-        self.transfer_amt.grid(row=1, column=0, padx=3, pady=3)
+        self.transfer_amt_entry = ctk.CTkEntry(self.transfer_frame, placeholder_text="Amount")
+        self.transfer_amt_entry.pack(pady=8, padx=4)
 
-        self.transfer_amt_entry = tk.Entry(self.transfer_frame)
-        self.transfer_amt_entry.grid(row=1, column=1, padx=3, pady=3)
+        self.submit_transfer = ctk.CTkButton(self.transfer_frame, text="Submit", command=self.transfer)
+        self.submit_transfer.pack(pady=8, padx=4)
 
-        self.submit_transfer = tk.Button(self.transfer_frame, text="Submit", command=self.transfer)
-        self.submit_transfer.grid(row=2, column=1, padx=3, pady=3)
-
-        self.back_btn = tk.Button(self.transfer_frame, text="Back", command=self.go_back_transfer)
-        self.back_btn.grid(row=3, column=1, padx=3, pady=3)
+        self.back_btn = ctk.CTkButton(self.transfer_frame, text="Back", command=self.go_back_transfer)
+        self.back_btn.pack(pady=8, padx=4)
 
     def update_account_drop(self, *args):
         # Get the selected user from the dropdown
@@ -671,39 +666,33 @@ class ATM:
         # Withdrawing the main frame
         self.main_frame.withdraw()
         # Creating a new frame
-        self.card_frame = tk.Toplevel(self.root)
+        self.card_frame = ctk.CTkToplevel(self.app)
         self.card_frame.geometry("300x300")
         self.card_frame.protocol("WM_DELETE_WINDOW", self.on_close)
 
         # Option to get a card by the bank, or to manually enter a card they already have.
         # Manually add an existing card
-        #  Card number Label
-        self.card_num_lbl = tk.Label(self.card_frame, text="Card Number")
-        self.card_num_lbl.grid(row=0, column=0, padx=3, pady=3)
-        # Card number entry
-        self.card_num_entry = tk.Entry(self.card_frame)
-        self.card_num_entry.grid(row=0, column=1, padx=3, pady=3)
-        # Expiration date label
-        self.exp_date_lbl = tk.Label(self.card_frame, text="Expiration Date")
-        self.exp_date_lbl.grid(row=1, column=0, padx=3, pady=3)
-        # Expiration date entry
-        self.exp_date_entry = tk.Entry(self.card_frame)
-        self.exp_date_entry.grid(row=1, column=1, padx=3, pady=3)
-        # ccv label
-        self.ccv_lbl = tk.Label(self.card_frame, text="CCV")
-        self.ccv_lbl.grid(row=2, column=0, padx=3, pady=3)
-        # ccv entry
-        self.ccv_entry = tk.Entry(self.card_frame)
-        self.ccv_entry.grid(row=2, column=1, padx=3, pady=3)
-        # Submit button to enter the info
-        self.submit_card_btn = tk.Button(self.card_frame, text="Submit", command=self.add_card)
-        self.submit_card_btn.grid(row=3, column=1, padx=3, pady=3)
-        # Generate a bank card
-        self.generate_card_btn = tk.Button(self.card_frame, text="Generate", command=self.generate_card)
-        self.generate_card_btn.grid(row=4, column=1, padx=3, pady=3)
 
-        self.back_arrow_card = tk.Button(self.card_frame, text="Back", command=self.go_back_card)
-        self.back_arrow_card.grid(row=5, column=2, padx=3, pady=3)
+        # Card number entry
+        self.card_num_entry = ctk.CTkEntry(self.card_frame, placeholder_text="Card Number")
+        self.card_num_entry.pack(pady=8, padx=4)
+
+        # Expiration date entry
+        self.exp_date_entry = ctk.CTkEntry(self.card_frame, placeholder_text="Expiration Date")
+        self.exp_date_entry.pack(pady=8, padx=4)
+
+        # ccv entry
+        self.ccv_entry = ctk.CTkEntry(self.card_frame, placeholder_text="CVV")
+        self.ccv_entry.pack(pady=8, padx=4)
+        # Submit button to enter the info
+        self.submit_card_btn = ctk.CTkButton(self.card_frame, text="Submit", command=self.add_card)
+        self.submit_card_btn.pack(pady=8, padx=4)
+        # Generate a bank card
+        self.generate_card_btn = ctk.CTkButton(self.card_frame, text="Generate", command=self.generate_card)
+        self.generate_card_btn.pack(pady=8, padx=4)
+
+        self.back_arrow_card = ctk.CTkButton(self.card_frame, text="Back", command=self.go_back_card)
+        self.back_arrow_card.pack(pady=8, padx=4)
 
     def add_card(self):
         try:
@@ -756,7 +745,7 @@ class ATM:
         # withdrawing the main frame
         self.main_frame.withdraw()
         # creating a new frame for the account creation
-        self.account_frame = tk.Toplevel(self.root)
+        self.account_frame = ctk.CTkToplevel(self.app)
         self.account_frame.geometry("300x300")
         self.account_frame.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -776,10 +765,10 @@ class ATM:
 
         self.type_entry = selected_option
 
-        self.submit_btn = tk.Button(self.account_frame, text="Submit", command=self.create_account)
+        self.submit_btn = ctk.CTkButton(self.account_frame, text="Submit", command=self.create_account)
         self.submit_btn.grid(row=2, column=2, padx=3, pady=3)
 
-        self.back_account = tk.Button(self.account_frame, text="Back", command=self.go_back_account)
+        self.back_account = ctk.CTkButton(self.account_frame, text="Back", command=self.go_back_account)
         self.back_account.grid(row=3, column=3, padx=3, pady=3)
 
     def on_option(self, event, selected_option):  # Drop down
@@ -813,7 +802,7 @@ class ATM:
             self.current_user = None
             if self.main_frame:
                 self.main_frame.withdraw()
-                self.login_frame.deiconify()
+                self.login_frame.withdraw()
         else:
             messagebox.showinfo("Logout fail")
 
