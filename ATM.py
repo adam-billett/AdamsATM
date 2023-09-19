@@ -1,24 +1,15 @@
-import tempfile
 import tkinter as tk
-from logging import root
 from tkinter import messagebox
 from tkinter import ttk
-from tabulate import tabulate
 import customtkinter as ctk
-
 import psycopg2
-import sys
-import ctypes
 import random
 from datetime import date, timedelta
-
-from PIL import Image, ImageTk
 
 
 class ATM:
     def __init__(self, app):
         ctk.set_appearance_mode("dark")
-
         self.app = app
         self.app.geometry("400x400")
         self.app.title("Adams ATM")
@@ -112,12 +103,6 @@ class ATM:
         if self.create_frame:
             self.create_frame.destroy()
         self.login_menu()
-
-    # To hide the Login frame
-    def hide_login_ui(self):
-        if self.login_frame:
-            self.login_frame.destroy()
-        self.root.deiconify()
 
     def go_back_depo(self):  # Go back to main menu from depo
         if self.depo_frame:
@@ -271,6 +256,7 @@ class ATM:
         # Bind the enter key to login
         self.password.bind("<Return>", lambda event: self.login())
         self.username.bind("<Return>", lambda event: self.login())
+
     def create_menu(self):
         self.login_window.withdraw()
         self.app.withdraw()
@@ -661,7 +647,6 @@ class ATM:
         else:
             messagebox.showerror("Error", "Do not have the funds to transfer (Will not let you transfer down to 0")
 
-
     def add_card_menu(self):  # Method to add a card to the users account
         # Withdrawing the main frame
         self.main_frame.withdraw()
@@ -752,31 +737,31 @@ class ATM:
         selected_option = tk.StringVar(self.account_frame)
         selected_option.set("Select an option")
 
-        options = ["Checking", "Savings"]
+        options = ["Select an option", "Checking", "Savings"]
 
-        option_menu = tk.OptionMenu(self.account_frame, selected_option, *options)
-        option_menu.grid(row=0, column=0, padx=3, pady=3)
+        option_menu_style = ttk.Style()
+        option_menu_style.configure("Custom.TMenubutton", background="grey", padding=5)
+        option_menu_style.configure("Custom.TMenubutton.TButton", relief="flat")
 
-        label = tk.Label(self.account_frame, textvariable=selected_option)
-        label.grid(row=1, column=0, padx=3, pady=3)
+        option_menu = ttk.OptionMenu(self.account_frame, selected_option, *options, style="Custom.TMenubutton")
+        option_menu.pack(pady=8, padx=4)
 
-        # TODO: issue with menu labels popping up as its parameters
         option_menu.bind("<ButtonRelease-1>", lambda event: self.on_option(event, selected_option))
 
         self.type_entry = selected_option
 
         self.submit_btn = ctk.CTkButton(self.account_frame, text="Submit", command=self.create_account)
-        self.submit_btn.grid(row=2, column=2, padx=3, pady=3)
+        self.submit_btn.pack(pady=8, padx=4)
 
         self.back_account = ctk.CTkButton(self.account_frame, text="Back", command=self.go_back_account)
-        self.back_account.grid(row=3, column=3, padx=3, pady=3)
+        self.back_account.pack(pady=8, padx=4)
 
     def on_option(self, event, selected_option):  # Drop down
         selected_option = self.selected_option
 
     def create_account(self):
         try:
-            # Fetching the user id and balance of the current logged in user
+            # Fetching the user id and balance of the current logged-in user
             self.cursor.execute("SELECT user_id FROM users WHERE username = %s",
                                 (str(self.current_user),))
             curr_id = self.cursor.fetchone()  # id of the current user
@@ -801,17 +786,16 @@ class ATM:
         if self.current_user:
             self.current_user = None
             if self.main_frame:
-                self.main_frame.withdraw()
-                self.login_frame.withdraw()
+                self.main_frame.destroy()
+                self.login_menu()
         else:
             messagebox.showinfo("Logout fail")
 
 
 def main():
-    root= ctk.CTk()
+    root = ctk.CTk()
     atm = ATM(root)
     root.mainloop()
-
 
 
 if __name__ == "__main__":
