@@ -35,7 +35,6 @@ class ATM:
 
         self.create_tables()
 
-
         # SQL creating tables
 
     def create_tables(self):  # Creating SQL tables
@@ -331,7 +330,8 @@ class ATM:
         option_menu = ttk.OptionMenu(self.main_frame, self.selected_option, *account_types, style="Custom.TMenubutton")
         option_menu.pack(pady=8, padx=4)
 
-        option_menu.bind("<ButtonRelease-1>", lambda event, arg=self.selected_option: self.on_option(event, self.selected_option))
+        option_menu.bind("<ButtonRelease-1>",
+                         lambda event, arg=self.selected_option: self.on_option(event, self.selected_option))
 
         # Display for current user
         self.current_user_label = ctk.CTkLabel(master=self.main_frame, text=current_user)
@@ -362,7 +362,8 @@ class ATM:
         self.locations_btn.pack(pady=8, padx=4)
 
         # Open an account button
-        self.account_btn = ctk.CTkButton(master=self.main_frame, text="Create Account", command=self.account_create_menu)
+        self.account_btn = ctk.CTkButton(master=self.main_frame, text="Create Account",
+                                         command=self.account_create_menu)
         self.account_btn.pack(pady=8, padx=4)
 
         # Exit/Logout button
@@ -440,8 +441,9 @@ class ATM:
         messagebox.showinfo("Success", f"${self.amount_entry.get()} deposited into account")
 
         # Insert transaction into the transaction table
-        self.cursor.execute("INSERT INTO transactions (user_id, account_id, transaction_type, amount) VALUES (%s, %s, %s, %s)",
-                            (self.get_curr_user(), (account_id), ("Deposit"), (depo_amt)))
+        self.cursor.execute(
+            "INSERT INTO transactions (user_id, account_id, transaction_type, amount) VALUES (%s, %s, %s, %s)",
+            (self.get_curr_user(), (account_id), ("Deposit"), (depo_amt)))
 
         self.connection.commit()
 
@@ -495,19 +497,21 @@ class ATM:
         else:
             updated_balance = balance - int(amt_to_withdraw)
 
-        # SQL to withdraw money from the current account
+            # SQL to withdraw money from the current account
             self.cursor.execute("UPDATE accounts SET balance = %s WHERE account_id = %s",
                                 (updated_balance, account_id))
 
             messagebox.showinfo("Success", f"${self.withdraw_amount_entry.get()} withdrawn from account")
 
-        # Insert the transaction into the transactions table
-            self.cursor.execute("INSERT INTO transactions (user_id, account_id, transaction_type, amount) VALUES (%s, %s, %s, %s)",
-                                (self.get_curr_user(), account_id, "Withdraw", self.withdraw_amount_entry.get()))
+            # Insert the transaction into the transactions table
+            self.cursor.execute(
+                "INSERT INTO transactions (user_id, account_id, transaction_type, amount) VALUES (%s, %s, %s, %s)",
+                (self.get_curr_user(), account_id, "Withdraw", self.withdraw_amount_entry.get()))
 
             self.connection.commit()
 
-    def transfer_menu(self):  # Method to transfer funds from one account to another keep track or deposits and withdraws
+    def transfer_menu(
+            self):  # Method to transfer funds from one account to another keep track or deposits and withdraws
 
         # Getting the ID of the current user
         self.get_curr_user()
@@ -540,7 +544,8 @@ class ATM:
         self.selected_account = tk.StringVar(self.transfer_frame)
         self.selected_account.set("Select Account")
 
-        options_menu = ttk.OptionMenu(self.transfer_frame, self.selected_account, "Select Account", style="Custom.TMenubutton")
+        options_menu = ttk.OptionMenu(self.transfer_frame, self.selected_account, "Select Account",
+                                      style="Custom.TMenubutton")
         options_menu.pack(pady=8, padx=4)
 
         # Store a reference to the OptionMenu
@@ -607,16 +612,16 @@ class ATM:
         selected_user = self.selected_user.get()  # Get the selected user
         selected_account = self.selected_account.get()  # Get the selected account
         transfer_amt = self.transfer_amt_entry.get()  # Get the amount to transfer
-        selected_type = self.selected_option.get() # Get the account they selected on the main menu
+        selected_type = self.selected_option.get()  # Get the account they selected on the main menu
 
         # Get ID of the current account
         self.cursor.execute("SELECT account_id FROM accounts WHERE user_id = %s", (self.get_curr_user()))
         account_id = self.cursor.fetchone()
 
-
         # Get current users balance
-        self.cursor.execute("SELECT balance FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
-                            (str(self.current_user), selected_type))
+        self.cursor.execute(
+            "SELECT balance FROM accounts WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
+            (str(self.current_user), selected_type))
         curr_bal = self.cursor.fetchone()  # logged-in users balance
         # taking the tuple and making it a var that is usable
         current_balance = curr_bal[0]
@@ -631,18 +636,21 @@ class ATM:
 
         # If else to ensure they have the funds to transfer
         if current_balance > int(transfer_amt):
-                # Take amount out of current user and add it to the selected account and user
+            # Take amount out of current user and add it to the selected account and user
             current_balance -= int(transfer_amt)
             selected_bal += int(transfer_amt)
-            self.cursor.execute("UPDATE accounts SET balance = %s WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
-                                (current_balance, str(self.current_user), selected_type))
-            self.cursor.execute("UPDATE accounts SET balance = %s WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
-                                (selected_bal, str(selected_user), selected_account))
+            self.cursor.execute(
+                "UPDATE accounts SET balance = %s WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
+                (current_balance, str(self.current_user), selected_type))
+            self.cursor.execute(
+                "UPDATE accounts SET balance = %s WHERE user_id = (SELECT user_id FROM users WHERE username = %s) AND account_type = %s",
+                (selected_bal, str(selected_user), selected_account))
             messagebox.showinfo("Success", "Funds transferred")
 
             # Inputing transaction into the database
-            self.cursor.execute("INSERT INTO transactions (user_id, account_id, transaction_type, amount) VALUES (%s, %s, %s, %s)",
-                                (self.get_curr_user(), account_id, "Transfer", transfer_amt))
+            self.cursor.execute(
+                "INSERT INTO transactions (user_id, account_id, transaction_type, amount) VALUES (%s, %s, %s, %s)",
+                (self.get_curr_user(), account_id, "Transfer", transfer_amt))
             self.connection.commit()
         else:
             messagebox.showerror("Error", "Do not have the funds to transfer (Will not let you transfer down to 0")
